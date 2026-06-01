@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>SharedParking</title>
+  <!-- Google Fonts for premium typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Application CSS -->
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+
+  <!-- Map Container (Fills background) -->
+  <div id="map"></div>
+
+  <!-- Floating Menu Button -->
+  <div id="app-header-container">
+    <button id="toggle-sidenav-btn" class="icon-btn glass-panel" aria-label="Open Menu" data-i18n-label="open_menu" data-i18n-title="open_menu">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+    </button>
+  </div>
+
+  <!-- Side Navigation Drawer -->
+  <aside id="sidenav" class="sidenav-panel" aria-hidden="true">
+    <div class="sidenav-header">
+      <h2 data-i18n="my_space">My Space</h2>
+      <button id="close-sidenav-btn" class="icon-btn" aria-label="Close Menu" data-i18n-label="close_menu" data-i18n-title="close_menu">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <!-- Sidenav Profile Detail -->
+    <div class="sidenav-profile glass-panel">
+      <img id="sidenav-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=placeholder" alt="Avatar" class="profile-avatar">
+      <div class="profile-meta">
+        <h3 id="sidenav-username" data-i18n="guest">Guest</h3>
+        <p class="profile-status" data-i18n="active_driver">Active Driver</p>
+      </div>
+      <button id="logout-btn" class="icon-btn" style="color: var(--danger);" aria-label="Log Out" data-i18n-label="log_out" data-i18n-title="log_out">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+      </button>
+    </div>
+
+    <!-- Language Selector Row -->
+    <div class="sidenav-language-selector">
+      <span data-i18n="language_label">Language:</span>
+      <div class="lang-buttons">
+        <button id="lang-en-btn" class="btn lang-btn selected" data-lang="en">EN</button>
+        <button id="lang-es-btn" class="btn lang-btn" data-lang="es">ES</button>
+      </div>
+    </div>
+
+    <!-- Groups Container -->
+    <div class="sidenav-section">
+      <div class="section-title">
+        <span data-i18n="shared_groups">Shared Groups</span>
+        <button id="join-group-trigger" class="btn btn-pill-sm" data-i18n="join_btn">+ Join</button>
+      </div>
+      <div id="groups-list" class="groups-accordion">
+        <!-- Rendered dynamically via JS -->
+        <p class="empty-state" data-i18n="no_groups">No groups joined yet. Create or join a group to start tracking.</p>
+      </div>
+    </div>
+
+    <!-- Objects Management Actions (Floating inside Sidenav) -->
+    <div class="sidenav-footer">
+      <button id="create-group-trigger" class="btn btn-secondary btn-full" data-i18n="create_group_btn">Create New Group</button>
+    </div>
+  </aside>
+  <div id="sidenav-backdrop" class="backdrop-overlay"></div>
+
+  <!-- AUTH OVERLAY (Sign In / Sign Up) -->
+  <div id="auth-overlay" class="fullscreen-overlay auth-theme" aria-hidden="true">
+    <!-- Glowing background blobs -->
+    <div class="auth-bg-blob auth-blob-1"></div>
+    <div class="auth-bg-blob auth-blob-2"></div>
+    <div class="auth-bg-blob auth-blob-3"></div>
+
+    <!-- Floating Language Switcher -->
+    <div class="auth-lang-selector glass-panel">
+      <button class="btn lang-btn" data-lang="en">EN</button>
+      <button class="btn lang-btn" data-lang="es">ES</button>
+    </div>
+
+    <div class="auth-card glass-panel">
+      <div class="auth-header">
+        <div class="auth-logo">🚗</div>
+        <h2 data-i18n="welcome_title">Welcome to SharedParking</h2>
+        <p data-i18n="welcome_subtitle">Auto-track vehicle locations with your group</p>
+      </div>
+      
+      <!-- Login Form -->
+      <form id="auth-form" novalidate>
+        <div class="form-group">
+          <label for="auth-email" data-i18n="email_label">Email Address</label>
+          <input type="email" id="auth-email" placeholder="name@example.com" required autocomplete="email" data-i18n-placeholder="email_placeholder">
+        </div>
+        <div class="form-group">
+          <label for="auth-password" data-i18n="password_label">Password</label>
+          <input type="password" id="auth-password" placeholder="••••••••" required autocomplete="current-password" data-i18n-placeholder="password_placeholder">
+        </div>
+        
+        <!-- Registration Fields (Initially Hidden) -->
+        <div id="signup-fields" class="hidden">
+          <div class="form-group">
+            <label for="auth-username" data-i18n="username_label">Username</label>
+            <input type="text" id="auth-username" placeholder="johndoe" autocomplete="username" data-i18n-placeholder="username_placeholder">
+          </div>
+          <div class="form-group">
+            <label data-i18n="avatar_label">Choose Avatar Style</label>
+            <div class="avatar-picker-grid">
+              <input type="hidden" id="auth-avatar-seed" value="car">
+              <button type="button" class="avatar-option selected" data-seed="car">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=car" alt="bot1" class="avatar-picker-img">
+              </button>
+              <button type="button" class="avatar-option" data-seed="sparky">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=sparky" alt="bot2" class="avatar-picker-img">
+              </button>
+              <button type="button" class="avatar-option" data-seed="shadow">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=shadow" alt="bot3" class="avatar-picker-img">
+              </button>
+              <button type="button" class="avatar-option" data-seed="pixel">
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=pixel" alt="bot4" class="avatar-picker-img">
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" id="auth-submit-btn" class="btn btn-primary btn-full" data-i18n="signin_btn">Sign In</button>
+      </form>
+
+      <!-- Social Logins Section -->
+      <div id="social-auth-section">
+        <div class="social-divider">
+          <span data-i18n="social_divider_text">Or continue with</span>
+        </div>
+        <div class="social-buttons-container">
+          <button type="button" id="google-login-btn" class="btn btn-social btn-full">
+            <svg class="social-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.422-5.196l-6.205-5.201C29.311 35.071 26.793 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.205 5.201C41.054 35.539 44 30.326 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg>
+            <span data-i18n="google_signin">Sign in with Google</span>
+          </button>
+          <button type="button" id="apple-login-btn" class="btn btn-social btn-full hidden">
+            <svg class="social-logo" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 4.17c.66-.81 1.11-1.93.99-3.06-.96.04-2.13.64-2.82 1.45-.6.69-1.12 1.84-1 2.94.99.08 2.1-.47 2.83-1.33z"/></svg>
+            <span data-i18n="apple_signin">Sign in with Apple</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="auth-footer">
+        <span id="auth-toggle-txt" data-i18n="no_account">Don't have an account?</span>
+        <button id="auth-toggle-btn" class="btn btn-text" data-i18n="signup_btn">Sign Up</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- MODALS -->
+  
+  <!-- Create Group Modal -->
+  <dialog id="create-group-modal" class="modal-dialog glass-panel">
+    <form method="dialog" id="create-group-form">
+      <h3 data-i18n="create_group_title">Create New Group</h3>
+      <div class="form-group">
+        <label for="new-group-name" data-i18n="group_name_label">Group Name</label>
+        <input type="text" id="new-group-name" placeholder="e.g., Family Fleet" required data-i18n-placeholder="group_name_placeholder">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-text close-modal-btn" data-i18n="cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" data-i18n="create">Create</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Join Group Modal -->
+  <dialog id="join-group-modal" class="modal-dialog glass-panel">
+    <form method="dialog" id="join-group-form">
+      <h3 data-i18n="join_group_title">Join Existing Group</h3>
+      <div class="form-group">
+        <label for="join-group-id" data-i18n="invite_code_label">Group Invite Code (ID)</label>
+        <input type="text" id="join-group-id" placeholder="Paste group ID here" required data-i18n-placeholder="invite_code_placeholder">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-text close-modal-btn" data-i18n="cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" data-i18n="join">Join</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Add Object Modal -->
+  <dialog id="add-object-modal" class="modal-dialog glass-panel">
+    <form method="dialog" id="add-object-form">
+      <h3 data-i18n="register_vehicle_title">Register New Vehicle</h3>
+      
+      <div class="form-group">
+        <label for="add-object-name" data-i18n="vehicle_name_label">Vehicle/Object Name</label>
+        <input type="text" id="add-object-name" placeholder="e.g., Mom's SUV" required data-i18n-placeholder="vehicle_name_placeholder">
+      </div>
+
+      <div class="form-group">
+        <label for="add-object-group-select" data-i18n="select_group_label">Select Group</label>
+        <select id="add-object-group-select" required></select>
+      </div>
+      
+      <div class="form-group">
+        <label data-i18n="select_icon_label">Select Icon</label>
+        <div class="emoji-picker-grid">
+          <input type="hidden" id="add-object-icon" value="🚗">
+          <button type="button" class="emoji-option selected" data-emoji="🚗">🚗</button>
+          <button type="button" class="emoji-option" data-emoji="🚙">🚙</button>
+          <button type="button" class="emoji-option" data-emoji="🚐">🚐</button>
+          <button type="button" class="emoji-option" data-emoji="🏍️">🏍️</button>
+          <button type="button" class="emoji-option" data-emoji="🚲">🚲</button>
+          <button type="button" class="emoji-option" data-emoji="🔑">🔑</button>
+          <button type="button" class="emoji-option" data-emoji="🐶">🐶</button>
+          <button type="button" class="emoji-option" data-emoji="🎒">🎒</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="add-object-ble-device-select" data-i18n="ble_device_label">Bluetooth LE Device</label>
+        <div class="ble-selector-row">
+          <select id="add-object-ble-device-select" class="ble-device-select">
+            <option value="" data-i18n="ble_select_placeholder">-- Select a device --</option>
+          </select>
+          <button type="button" id="add-object-ble-scan-btn" class="btn btn-secondary btn-sm ble-scan-btn" data-i18n="ble_scan_btn">Scan</button>
+        </div>
+        <div id="add-object-ble-manual-row" class="ble-manual-row hidden">
+          <input type="text" id="add-object-ble-device" placeholder="e.g., OBD-II_Beacon_45A1" data-i18n-placeholder="ble_device_placeholder">
+        </div>
+        <small class="form-help" data-i18n="ble_device_help">When this device disconnects, location updates will trigger.</small>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-text close-modal-btn" data-i18n="cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" data-i18n="register">Register</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Pair BLE Device Modal -->
+  <dialog id="pair-device-modal" class="modal-dialog glass-panel">
+    <form method="dialog" id="pair-device-form">
+      <h3 data-i18n="pair_device_title">Associate Bluetooth Device</h3>
+      <p style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px;" data-i18n="pair_device_desc">
+        Define the Bluetooth LE MAC address or UUID that represents your connection to this vehicle on your phone.
+      </p>
+      
+      <input type="hidden" id="pair-device-object-id">
+
+      <div class="form-group">
+        <label for="pair-device-ble-select" data-i18n="pair_device_label">Bluetooth LE Device ID / MAC</label>
+        <div class="ble-selector-row">
+          <select id="pair-device-ble-select" class="ble-device-select">
+            <option value="" data-i18n="ble_select_placeholder">-- Select a device --</option>
+          </select>
+          <button type="button" id="pair-device-ble-scan-btn" class="btn btn-secondary btn-sm ble-scan-btn" data-i18n="ble_scan_btn">Scan</button>
+        </div>
+        <div id="pair-device-ble-manual-row" class="ble-manual-row hidden">
+          <input type="text" id="pair-device-ble-id" placeholder="e.g., OBD-II_Beacon_45A1" data-i18n-placeholder="pair_device_placeholder">
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-text close-modal-btn" data-i18n="cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" data-i18n="save_pairing">Save Pairing</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Group Manage Modal -->
+  <dialog id="group-manage-modal" class="modal-dialog glass-panel">
+    <div id="group-manage-header">
+      <div class="group-manage-title-row">
+        <span class="group-manage-emoji">👥</span>
+        <h3 id="group-manage-name" style="margin-bottom:0;">Group Name</h3>
+      </div>
+      <button type="button" class="icon-btn close-modal-btn" aria-label="Close" style="flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
+    </div>
+
+    <!-- Quick Actions Grid -->
+    <div class="group-manage-actions">
+      <button type="button" id="gm-add-vehicle-btn" class="group-manage-action-card">
+        <span class="gm-action-icon">🚗</span>
+        <span class="gm-action-label" data-i18n="gm_add_vehicle">Add Vehicle</span>
+      </button>
+      <button type="button" id="gm-settings-btn" class="group-manage-action-card">
+        <span class="gm-action-icon">⚙️</span>
+        <span class="gm-action-label" data-i18n="gm_group_settings">Group Settings</span>
+      </button>
+      <button type="button" id="gm-invite-btn" class="group-manage-action-card">
+        <span class="gm-action-icon">🔗</span>
+        <span class="gm-action-label" data-i18n="gm_create_invite">Create Invite</span>
+      </button>
+    </div>
+
+    <!-- Edit Group Name (initially hidden) -->
+    <div id="gm-settings-panel" class="gm-panel hidden">
+      <div class="form-group" style="margin-bottom:0;">
+        <label for="gm-group-name-input" data-i18n="group_name_label">Group Name</label>
+        <input type="text" id="gm-group-name-input" placeholder="Group name" required>
+      </div>
+      <div class="modal-actions" style="margin-top:12px;">
+        <button type="button" class="btn btn-text" id="gm-settings-cancel-btn" data-i18n="cancel">Cancel</button>
+        <button type="button" class="btn btn-primary" id="gm-settings-save-btn" data-i18n="save">Save</button>
+      </div>
+    </div>
+
+    <!-- Invite Code Panel (initially hidden) -->
+    <div id="gm-invite-panel" class="gm-panel hidden">
+      <div class="gm-invite-box glass-panel">
+        <p class="gm-invite-label" data-i18n="gm_invite_code_label">Group Invite Code</p>
+        <p id="gm-invite-code" class="gm-invite-code">—</p>
+      </div>
+      <button type="button" class="btn btn-secondary btn-full" id="gm-copy-invite-btn" style="margin-top:10px;" data-i18n="gm_copy_code">Copy Code</button>
+    </div>
+  </dialog>
+
+  <!-- Leave Group Confirmation Modal -->
+  <dialog id="leave-group-modal" class="modal-dialog glass-panel">
+    <div class="leave-group-modal-content">
+      <div class="leave-group-icon">🚪</div>
+      <h3 data-i18n="leave_group_confirm_title">Leave Group?</h3>
+      <p id="leave-group-modal-text" class="leave-group-modal-desc"></p>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-text close-modal-btn" data-i18n="cancel">Cancel</button>
+      <button type="button" class="btn btn-danger" id="leave-group-confirm-btn" data-i18n="leave_group">Leave Group</button>
+    </div>
+  </dialog>
+
+  <!-- Script Modules -->
+  <script type="module" src="/src/main.js"></script>
+
+</body>
+</html>

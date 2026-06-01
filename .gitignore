@@ -141,3 +141,36 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Capacitor web build output
+/www
+/dist
+/build
+capacitor.config.json.timestamp-*
+capacitor.config.ts.timestamp-*
+
+# Capacitor iOS (Native build / dependencies)
+/ios/App/App/public
+/ios/App/Pods
+/ios/App/Podfile.lock
+/ios/App/build
+/ios/App/DerivedData
+*.xcworkspace
+*.xcodeproj/xcuserdata
+*.xcodeproj/project.xcworkspace
+*.xcworkspace/
+*.xcodeproj/
+
+# Capacitor Android (Native build / Gradle / Keys)
+/android/app/src/main/assets/public
+/android/app/build
+/android/app/app.iml
+/android/build
+.gradle/
+local.properties
+*.keystore
+*.jks
+
+# OS files
+.DS_Store
+Thumbs.db

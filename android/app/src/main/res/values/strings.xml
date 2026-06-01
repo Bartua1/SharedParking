@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SharedParking</string>
+    <string name="title_activity_main">SharedParking</string>
+    <string name="package_name">com.bartua1.sharedparking</string>
+    <string name="custom_url_scheme">com.bartua1.sharedparking</string>
+</resources>

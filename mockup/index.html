@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SharedParking - Minimal Active Broadcast Icons</title>
+  <!-- Google Fonts: Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <style>
+    /* Premium Pastel Variable System */
+    :root {
+      --bg-primary: #FAF9F6; /* Alabaster Off-white */
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f2efe9;
+      --accent-blue: #3b82f6;
+      --accent-purple: #8b5cf6;
+      --text-main: #27272a;
+      --text-muted: #71717a;
+      --glass-border: rgba(39, 39, 42, 0.06);
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --card-shadow: 0 10px 30px -10px rgba(39, 39, 42, 0.05);
+      
+      --icon-radius: 22%; /* Default Squircle shape */
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg-primary);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(244, 63, 94, 0.03) 0%, transparent 40%);
+      color: var(--text-main);
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 2rem 1rem;
+    }
+
+    /* Container alignment */
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    /* Header styling */
+    header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    header h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #f43f5e 0%, #f59e0b 50%, #8b5cf6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+      letter-spacing: -1px;
+    }
+
+    header p {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+      font-weight: 400;
+    }
+
+    /* Controls Panel */
+    .control-panel {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      padding: 0.8rem 1.2rem;
+      border-radius: 16px;
+      margin-bottom: 2.5rem;
+      box-shadow: var(--card-shadow);
+      z-index: 10;
+      position: relative;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .control-label {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      font-weight: 700;
+      margin-right: 0.5rem;
+    }
+
+    .btn-toggle {
+      background: var(--bg-secondary);
+      border: 1px solid var(--glass-border);
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-toggle:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-main);
+    }
+
+    .btn-toggle.active {
+      background: #f43f5e;
+      border-color: #f43f5e;
+      color: white;
+      box-shadow: 0 4px 12px rgba(244, 63, 94, 0.25);
+    }
+
+    /* Main Showcase Grid */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 2.5rem;
+      margin-bottom: 4rem;
+    }
+
+    @media (min-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 3fr 2fr;
+      }
+    }
+
+    /* Icon Collection Section */
+    .icon-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 640px) {
+      .icon-list {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    /* Premium Icon Card */
+    .icon-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 1.75rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .icon-card:hover {
+      transform: translateY(-3px);
+      border-color: rgba(244, 63, 94, 0.25);
+      box-shadow: 0 15px 35px -10px rgba(39, 39, 42, 0.1);
+    }
+
+    .icon-card.selected {
+      border-color: #f43f5e;
+      box-shadow: 0 0 20px rgba(244, 63, 94, 0.08), var(--card-shadow);
+    }
+
+    /* App Icon Graphic Wrap */
+    .icon-wrapper {
+      width: 160px;
+      height: 160px;
+      margin-bottom: 1.25rem;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      filter: drop-shadow(0 8px 16px rgba(39, 39, 42, 0.1));
+      position: relative;
+    }
+
+    .icon-wrapper svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: var(--icon-radius);
+      transition: border-radius 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      object-fit: cover;
+    }
+
+    .icon-info {
+      text-align: center;
+      margin-bottom: 1.25rem;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .icon-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.4rem;
+      color: var(--text-main);
+    }
+
+    .icon-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      font-weight: 400;
+    }
+
+    /* Download controls inside card */
+    .download-actions {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 0.4rem;
+    }
+
+    .btn-download {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--glass-border);
+      color: var(--text-main);
+      padding: 0.65rem 1rem;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: all 0.2s ease;
+    }
+
+    .btn-download:hover {
+      background: #f43f5e;
+      border-color: #f43f5e;
+      color: white;
+      box-shadow: 0 4px 10px rgba(244, 63, 94, 0.2);
+    }
+
+    .btn-download-secondary {
+      background: transparent;
+      border-color: var(--glass-border);
+      color: var(--text-muted);
+    }
+
+    .btn-download-secondary:hover {
+      background: rgba(39, 39, 42, 0.03);
+      color: var(--text-main);
+      border-color: var(--text-muted);
+      box-shadow: none;
+    }
+
+    /* Phone Device Mockup Frame */
+    .preview-column {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .preview-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 1.75rem;
+      box-shadow: var(--card-shadow);
+    }
+
+    .preview-card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .preview-badge {
+      font-size: 0.7rem;
+      background: rgba(244, 63, 94, 0.08);
+      color: #f43f5e;
+      padding: 0.2rem 0.6rem;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+
+    /* Device Showcase Container */
+    .device-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem 0;
+    }
+
+    .phone-mockup {
+      width: 280px;
+      height: 560px;
+      border: 8px solid #27272a;
+      border-radius: 36px;
+      background: url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2864&auto=format&fit=crop') no-repeat center center;
+      background-size: cover;
+      position: relative;
+      box-shadow: 0 20px 45px -10px rgba(39, 39, 42, 0.25);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 2.8rem 1.1rem 1.2rem 1.1rem;
+    }
+
+    /* Notch */
+    .phone-notch {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 22px;
+      background: #27272a;
+      border-radius: 15px;
+      z-index: 10;
+    }
+
+    /* Simulated App Grid */
+    .phone-app-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-gap: 1.1rem 0.75rem;
+      margin-top: 0.8rem;
+    }
+
+    .simulated-app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .simulated-app-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--icon-radius);
+      margin-bottom: 0.25rem;
+      box-shadow: 0 4px 8px rgba(39, 39, 42, 0.15);
+      display: block;
+      transition: border-radius 0.3s ease;
+    }
+
+    .simulated-app-icon.active-icon-preview {
+      transform: scale(1.03);
+      animation: pulseGlow 3s infinite ease-in-out;
+    }
+
+    .simulated-app-label {
+      font-size: 0.6rem;
+      color: #fff;
+      font-weight: 500;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+
+    /* Custom Static simulated icons */
+    .sim-icon-messages { background: linear-gradient(135deg, #34d399, #059669); position: relative; }
+    .sim-icon-messages::after {
+      content: "";
+      position: absolute;
+      width: 22px;
+      height: 16px;
+      background: #fff;
+      border-radius: 4px;
+      top: 14px; left: 11px;
+      clip-path: polygon(0% 0%, 100% 0%, 100% 75%, 45% 75%, 25% 100%, 25% 75%, 0% 75%);
+    }
+
+    .sim-icon-maps {
+      background: #f1f5f9;
+      position: relative;
+      overflow: hidden;
+    }
+    .sim-icon-maps::after {
+      content: "";
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 30% 30%, #ef4444 8%, transparent 10%), linear-gradient(45deg, #3b82f6 50%, #10b981 50%);
+    }
+
+    .sim-icon-camera {
+      background: linear-gradient(135deg, #94a3b8, #475569);
+      position: relative;
+    }
+    .sim-icon-camera::after {
+      content: "";
+      position: absolute;
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 3px solid #cbd5e1;
+      top: 15px; left: 15px;
+    }
+
+    .sim-icon-settings {
+      background: linear-gradient(135deg, #cbd5e1, #64748b);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    .sim-icon-music {
+      background: linear-gradient(135deg, #f43f5e, #be123c);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      color: white;
+      font-size: 1.2rem;
+    }
+
+    /* Phone Dock Area */
+    .phone-dock {
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 0.5rem;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-gap: 0.5rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 0.3rem;
+    }
+
+    /* Keyframes for soft pulse on selected icon */
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 4px 8px rgba(39, 39, 42, 0.15); }
+      50% { box-shadow: 0 0 15px rgba(244, 63, 94, 0.4); }
+    }
+
+    /* Style Guide / Specifications Panel */
+    .specs-card {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 20px;
+      padding: 1.75rem;
+      margin-top: 1.5rem;
+      box-shadow: var(--card-shadow);
+    }
+
+    .specs-card h3 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+
+    .specs-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .specs-list {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .specs-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.6rem;
+    }
+
+    .specs-icon {
+      color: #f43f5e;
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    .specs-text h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.1;
+      color: var(--text-main);
+    }
+
+    .specs-text p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>SharedParking Active Beacon Collection</h1>
+      <p>A unified suite of minimalist side-view vehicle and key finder glyphs emitting active transmission signals.</p>
+    </header>
+
+    <!-- Global Controls -->
+    <div class="control-panel">
+      <div class="control-group">
+        <span class="control-label">Mask Shape:</span>
+        <button class="btn-toggle active" data-radius="22%" onclick="setShape(this, '22%')">Squircle (iOS)</button>
+        <button class="btn-toggle" data-radius="12%" onclick="setShape(this, '12%')">Rounded Rect</button>
+        <button class="btn-toggle" data-radius="50%" onclick="setShape(this, '50%')">Circle</button>
+        <button class="btn-toggle" data-radius="0%" onclick="setShape(this, '0%')">Square</button>
+      </div>
+    </div>
+
+    <!-- Main Workspace Grid -->
+    <div class="main-grid">
+      
+      <!-- Left side: The 5 App Icon Concept Cards -->
+      <div class="icon-list">
+        
+        <!-- Concept 1: The Electric Sedan -->
+        <div class="icon-card selected" onclick="selectIcon(1)" id="card-1">
+          <div class="icon-wrapper">
+            <!-- SVG 1: Electric Sedan -->
+            <svg id="svg-icon-1" viewBox="0 0 1024 1024" width="100%" height="100%">
+              <defs>
+                <linearGradient id="bg-grad-1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#EFF6FF"/>
+                  <stop offset="100%" stop-color="#DBEAFE"/>
+                </linearGradient>
+              </defs>
+              <rect class="svg-bg" width="1024" height="1024" fill="url(#bg-grad-1)"/>
+              <path d="M 432 380 C 482 335 542 335 592 380" stroke="#3B82F6" stroke-width="16" stroke-linecap="round" fill="none"/>
+              <path d="M 372 320 C 462 250 562 250 652 320" stroke="#3B82F6" stroke-width="16" stroke-linecap="round" fill="none" opacity="0.6"/>
+              <path d="M 260 590 L 260 540 C 260 540, 290 510, 360 495 L 430 460 C 470 445, 530 445, 570 460 L 640 495 C 710 510, 740 540, 740 590 L 740 630 L 260 630 Z" fill="#1E293B"/>
+              <circle cx="380" cy="630" r="45" fill="#0F172A"/>
+              <circle cx="620" cy="630" r="45" fill="#0F172A"/>
+              <circle cx="380" cy="630" r="16" fill="#F8FAFC"/>
+              <circle cx="620" cy="630" r="16" fill="#F8FAFC"/>
+            </svg>
+          </div>
+          <div class="icon-info">
+            <h2 class="icon-title">1. The Electric Sedan</h2>
+            <p class="icon-desc">A classic commuter sedan silhouette broadcasting crisp blue signals. Designed on a soft pastel sky-blue canvas.</p>
+          </div>
+          <div class="download-actions">
+            <button class="btn-download" onclick="downloadIcon(1, 'Electric_Sedan_Square', false)">
+              Download Standard (Square)
+            </button>
+            <button class="btn-download btn-download-secondary" onclick="downloadIcon(1, 'Electric_Sedan_Masked', true)">
+              Download Masked SVG
+            </button>
+          </div>
+        </div>
+
+        <!-- Concept 2: Connected Key Finder -->
+        <div class="icon-card" onclick="selectIcon(2)" id="card-2">
+          <div class="icon-wrapper">
+            <!-- SVG 2: Key Finder -->
+            <svg id="svg-icon-2" viewBox="0 0 1024 1024" width="100%" height="100%">
+              <defs>
+                <linearGradient id="bg-grad-2" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#F5F3FF"/>
+                  <stop offset="100%" stop-color="#EDE9FE"/>
+                </linearGradient>
+              </defs>
+              <rect class="svg-bg" width="1024" height="1024" fill="url(#bg-grad-2)"/>
+              <circle cx="512" cy="380" r="160" stroke="#8B5CF6" stroke-width="14" stroke-dasharray="15 15" fill="none" opacity="0.5"/>
+              <circle cx="512" cy="380" r="260" stroke="#8B5CF6" stroke-width="14" stroke-dasharray="25 25" fill="none" opacity="0.3"/>
+              <g transform="translate(0, 80)">
+                <circle cx="512" cy="300" r="80" stroke="#312E81" stroke-width="24" fill="none"/>
+                <rect x="422" y="360" width="180" height="260" rx="40" fill="#312E81"/>
+                <circle cx="512" cy="490" r="24" fill="#10B981"/>
+              </g>
+            </svg>
+          </div>
+          <div class="icon-info">
+            <h2 class="icon-title">2. Connected Key Finder</h2>
+            <p class="icon-desc">A minimal key fob silhouette emitting circular radio pulses. Perfect representation for trackable accessories/fobs.</p>
+          </div>
+          <div class="download-actions">
+            <button class="btn-download" onclick="downloadIcon(2, 'Key_Finder_Square', false)">
+              Download Standard (Square)
+            </button>
+            <button class="btn-download btn-download-secondary" onclick="downloadIcon(2, 'Key_Finder_Masked', true)">
+              Download Masked SVG
+            </button>
+          </div>
+        </div>
+
+        <!-- Concept 3: The Urban Bicycle -->
+        <div class="icon-card" onclick="selectIcon(3)" id="card-3">
+          <div class="icon-wrapper">
+            <!-- SVG 3: Urban Bicycle -->
+            <svg id="svg-icon-3" viewBox="0 0 1024 1024" width="100%" height="100%">
+              <defs>
+                <linearGradient id="bg-grad-3" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#F0FDF4"/>
+                  <stop offset="100%" stop-color="#D1FAE5"/>
+                </linearGradient>
+              </defs>
+              <rect class="svg-bg" width="1024" height="1024" fill="url(#bg-grad-3)"/>
+              <path d="M 432 380 C 482 335 542 335 592 380" stroke="#10B981" stroke-width="16" stroke-linecap="round" fill="none"/>
+              <path d="M 372 320 C 462 250 562 250 652 320" stroke="#10B981" stroke-width="16" stroke-linecap="round" fill="none" opacity="0.6"/>
+              <g transform="translate(0, 60)" stroke="#065F46" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none">
+                <circle cx="360" cy="520" r="80" fill="none"/>
+                <circle cx="660" cy="520" r="80" fill="none"/>
+                <polygon points="360,520 510,520 620,440 480,440"/>
+                <line x1="360" y1="520" x2="480" y2="440"/>
+                <line x1="660" y1="520" x2="620" y2="390"/>
+                <line x1="600" y1="390" x2="650" y2="390"/>
+                <line x1="480" y1="520" x2="450" y2="410"/>
+                <line x1="420" y1="410" x2="470" y2="410"/>
+              </g>
+            </svg>
+          </div>
+          <div class="icon-info">
+            <h2 class="icon-title">3. The Urban Bicycle</h2>
+            <p class="icon-desc">A highly detailed minimalist bicycle outline on a clean mint background. Symbolizes micro-mobility, keys, and tracking assets.</p>
+          </div>
+          <div class="download-actions">
+            <button class="btn-download" onclick="downloadIcon(3, 'Urban_Bicycle_Square', false)">
+              Download Standard (Square)
+            </button>
+            <button class="btn-download btn-download-secondary" onclick="downloadIcon(3, 'Urban_Bicycle_Masked', true)">
+              Download Masked SVG
+            </button>
+          </div>
+        </div>
+
+        <!-- Concept 4: Family Adventure SUV -->
+        <div class="icon-card" onclick="selectIcon(4)" id="card-4">
+          <div class="icon-wrapper">
+            <!-- SVG 4: Adventure SUV -->
+            <svg id="svg-icon-4" viewBox="0 0 1024 1024" width="100%" height="100%">
+              <defs>
+                <linearGradient id="bg-grad-4" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FFF7ED"/>
+                  <stop offset="100%" stop-color="#FFEDD5"/>
+                </linearGradient>
+              </defs>
+              <rect class="svg-bg" width="1024" height="1024" fill="url(#bg-grad-4)"/>
+              <path d="M 432 370 C 482 325 542 325 592 370" stroke="#F97316" stroke-width="16" stroke-linecap="round" fill="none"/>
+              <path d="M 372 310 C 462 240 562 240 652 310" stroke="#F97316" stroke-width="16" stroke-linecap="round" fill="none" opacity="0.6"/>
+              <path d="M 260 590 L 260 480 C 260 480, 270 450, 310 450 L 680 450 C 720 450, 740 480, 740 520 L 740 590 L 740 630 L 260 630 Z" fill="#431407"/>
+              <line x1="330" y1="430" x2="670" y2="430" stroke="#431407" stroke-width="16" stroke-linecap="round"/>
+              <line x1="400" y1="430" x2="400" y2="450" stroke="#431407" stroke-width="12"/>
+              <line x1="600" y1="430" x2="600" y2="450" stroke="#431407" stroke-width="12"/>
+              <circle cx="380" cy="630" r="45" fill="#1C0A00"/>
+              <circle cx="620" cy="630" r="45" fill="#1C0A00"/>
+              <circle cx="380" cy="630" r="16" fill="#FFF7ED"/>
+              <circle cx="620" cy="630" r="16" fill="#FFF7ED"/>
+            </svg>
+          </div>
+          <div class="icon-info">
+            <h2 class="icon-title">4. Family Adventure SUV</h2>
+            <p class="icon-desc">A retro-style camper/SUV silhouette with a luggage rack, broadcasting orange signal waves. Ideal for shared family vehicle fleets.</p>
+          </div>
+          <div class="download-actions">
+            <button class="btn-download" onclick="downloadIcon(4, 'Adventure_SUV_Square', false)">
+              Download Standard (Square)
+            </button>
+            <button class="btn-download btn-download-secondary" onclick="downloadIcon(4, 'Adventure_SUV_Masked', true)">
+              Download Masked SVG
+            </button>
+          </div>
+        </div>
+
+        <!-- Concept 5: Smart Garage Hub -->
+        <div class="icon-card" onclick="selectIcon(5)" id="card-5">
+          <div class="icon-wrapper">
+            <!-- SVG 5: Smart Garage Hub -->
+            <svg id="svg-icon-5" viewBox="0 0 1024 1024" width="100%" height="100%">
+              <defs>
+                <linearGradient id="bg-grad-5" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#FFF1F2"/>
+                  <stop offset="100%" stop-color="#FFE4E6"/>
+                </linearGradient>
+              </defs>
+              <rect class="svg-bg" width="1024" height="1024" fill="url(#bg-grad-5)"/>
+              <path d="M 432 370 C 482 325 542 325 592 370" stroke="#F43F5E" stroke-width="16" stroke-linecap="round" fill="none"/>
+              <path d="M 372 310 C 462 240 562 240 652 310" stroke="#F43F5E" stroke-width="16" stroke-linecap="round" fill="none" opacity="0.6"/>
+              <path d="M 512 430 L 280 580 L 280 750 L 744 750 L 744 580 Z" fill="#9F1239"/>
+              <path d="M 340 750 L 340 620 C 340 620, 350 600, 370 600 L 654 600 C 674 600, 684 620, 684 620 L 684 750 Z" fill="url(#bg-grad-5)"/>
+              <path d="M 420 730 L 420 690 C 420 690, 430 670, 450 660 C 470 650, 550 650, 570 660 L 600 690 C 610 700, 610 730, 610 730 Z" fill="#9F1239"/>
+            </svg>
+          </div>
+          <div class="icon-info">
+            <h2 class="icon-title">5. Smart Garage Hub</h2>
+            <p class="icon-desc">A minimal garage house outline enclosing a small vehicle, emitting soft red signals. Perfect representation of parked home status.</p>
+          </div>
+          <div class="download-actions">
+            <button class="btn-download" onclick="downloadIcon(5, 'Garage_Hub_Square', false)">
+              Download Standard (Square)
+            </button>
+            <button class="btn-download btn-download-secondary" onclick="downloadIcon(5, 'Garage_Hub_Masked', true)">
+              Download Masked SVG
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Right side: Real-time Smartphone Home Screen Preview -->
+      <div class="preview-column">
+        
+        <div class="preview-card">
+          <div class="preview-card-title">
+            <span>Smartphone Context Mockup</span>
+            <span class="preview-badge" id="preview-active-label">Concept 1 Active</span>
+          </div>
+
+          <div class="device-container">
+            <div class="phone-mockup">
+              <!-- Notch -->
+              <div class="phone-notch"></div>
+              
+              <!-- Main Apps Grid -->
+              <div class="phone-app-grid">
+                <!-- Row 1 -->
+                <div class="simulated-app">
+                  <div class="simulated-app-icon sim-icon-messages"></div>
+                  <span class="simulated-app-label">Messages</span>
+                </div>
+                <div class="simulated-app">
+                  <div class="simulated-app-icon sim-icon-maps"></div>
+                  <span class="simulated-app-label">Maps</span>
+                </div>
+                <div class="simulated-app">
+                  <div class="simulated-app-icon sim-icon-camera"></div>
+                  <span class="simulated-app-label">Camera</span>
+                </div>
+                <div class="simulated-app">
+                  <div class="simulated-app-icon sim-icon-settings"></div>
+                  <span class="simulated-app-label">Settings</span>
+                </div>
+
+                <!-- Row 2 -->
+                <div class="simulated-app">
+                  <div class="simulated-app-icon active-icon-preview" id="phone-preview-icon">
+                    <!-- Cloned dynamic SVG loads here -->
+                  </div>
+                  <span class="simulated-app-label" style="font-weight: 700; color: #fff;">SharedPark</span>
+                </div>
+              </div>
+
+              <!-- Dock Area -->
+              <div class="phone-dock">
+                <div class="simulated-app">
+                  <div class="simulated-app-icon sim-icon-music"></div>
+                </div>
+                <div class="simulated-app">
+                  <div class="simulated-app-icon" style="background: linear-gradient(135deg, #3b82f6, #60a5fa); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1rem;">💬</div>
+                </div>
+                <div class="simulated-app">
+                  <div class="simulated-app-icon" style="background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 1.1rem;">📞</div>
+                </div>
+                <div class="simulated-app">
+                  <div class="simulated-app-icon" style="background: #1e293b; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">🌐</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Design specifications summary -->
+        <div class="specs-card">
+          <h3>Active Beacon Design Aesthetics</h3>
+          <ul class="specs-list">
+            <li class="specs-item">
+              <span class="specs-icon">🚗</span>
+              <div class="specs-text">
+                <h4>Side Silhouette</h4>
+                <p>Flat, solid side-view shapes of transportation assets and keys, keeping detailed geometry minimal.</p>
+              </div>
+            </li>
+            <li class="specs-item">
+              <span class="specs-icon">📡</span>
+              <div class="specs-text">
+                <h4>Signal Wave Focus</h4>
+                <p>Radiating arcs representing Bluetooth beacons and active location mapping grids.</p>
+              </div>
+            </li>
+            <li class="specs-item">
+              <span class="specs-icon">🎨</span>
+              <div class="specs-text">
+                <h4>Warm Pastel Theme</h4>
+                <p>Elegant peach, lavender, soft mint, rose, and light-blue backdrops offering organic contrast.</p>
+              </div>
+            </li>
+            <li class="specs-item">
+              <span class="specs-icon">📱</span>
+              <div class="specs-text">
+                <h4>Dynamic Scaling</h4>
+                <p>Clean SVG formatting with no filters or shadows, optimizing performance on high-resolution displays.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Script for Mockup interactivity -->
+  <script>
+    let currentSelectedIconId = 1;
+    let currentShapeRadius = "22%"; // Default to iOS Squircle
+
+    // Run initialization on load
+    window.addEventListener('DOMContentLoaded', () => {
+      selectIcon(1);
+    });
+
+    // Toggle border radius shape across elements
+    function setShape(button, radius) {
+      // Toggle active states in button list
+      const groupButtons = button.parentNode.querySelectorAll('.btn-toggle');
+      groupButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
+
+      currentShapeRadius = radius;
+      document.documentElement.style.setProperty('--icon-radius', radius);
+    }
+
+    // Handle selection and cloning onto the simulated device screen
+    function selectIcon(id) {
+      currentSelectedIconId = id;
+      
+      // Update selected cards
+      for(let i = 1; i <= 5; i++) {
+        const card = document.getElementById(`card-${i}`);
+        if(i === id) {
+          card.classList.add('selected');
+        } else {
+          card.classList.remove('selected');
+        }
+      }
+
+      // Update badge label
+      document.getElementById('preview-active-label').innerText = `Concept ${id} Active`;
+
+      // Clone specific SVG onto the phone screen container
+      const sourceSvg = document.getElementById(`svg-icon-${id}`);
+      const targetContainer = document.getElementById('phone-preview-icon');
+      
+      targetContainer.innerHTML = ''; // Clear previous cloned content
+      const clonedSvg = sourceSvg.cloneNode(true);
+      
+      // Clean target attributes for home screen scaling
+      clonedSvg.removeAttribute('id');
+      clonedSvg.style.width = "100%";
+      clonedSvg.style.height = "100%";
+      clonedSvg.style.borderRadius = "inherit"; // Inherit the phone's mask
+      
+      targetContainer.appendChild(clonedSvg);
+    }
+
+    // Handles downloading the SVG
+    function downloadIcon(id, fileName, applyMask) {
+      const originalSvg = document.getElementById(`svg-icon-${id}`);
+      const clonedSvg = originalSvg.cloneNode(true);
+      
+      // Setup attributes for standalone vector standard
+      clonedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+      clonedSvg.setAttribute("width", "1024");
+      clonedSvg.setAttribute("height", "1024");
+      clonedSvg.removeAttribute("id");
+
+      // Handle clipping if user downloaded the masked design
+      if (applyMask) {
+        let clipValue = 225; // default 22% of 1024
+        if (currentShapeRadius === '50%') clipValue = 512;
+        if (currentShapeRadius === '12%') clipValue = 120;
+        if (currentShapeRadius === '0%') clipValue = 0;
+
+        // Query the background rect in the clone and apply roundings
+        const bgRect = clonedSvg.querySelector('.svg-bg');
+        if (bgRect) {
+          bgRect.setAttribute('rx', clipValue);
+          bgRect.setAttribute('ry', clipValue);
+        }
+      }
+
+      const svgData = new XMLSerializer().serializeToString(clonedSvg);
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+      const svgUrl = URL.createObjectURL(svgBlob);
+      
+      const downloadLink = document.createElement("a");
+      downloadLink.href = svgUrl;
+      downloadLink.download = `${fileName}.svg`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+  </script>
+</body>
+</html>
