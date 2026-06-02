@@ -34,9 +34,11 @@ async function bootApp() {
     onRegister,
     onLogout,
     onCreateGroup,
+    onRenameGroup,
     onJoinGroup,
     onLeaveGroup,
     onAddObject,
+    onEditObject,
     onDeleteObject,
     onPairDevice,
     onLocateObject: (lat, lng) => centerMap(lat, lng, 16),
@@ -521,6 +523,25 @@ async function onLeaveGroup(groupId) {
   }
 }
 
+async function onRenameGroup(groupId, newName) {
+  try {
+    const { error } = await supabase
+      .from('groups')
+      .update({ name: newName })
+      .eq('id', groupId);
+
+    if (error) throw error;
+
+    haptics.notification('success');
+    showToast(t('toast_rename_group_success', { name: newName }), 'success');
+    await syncData();
+  } catch (err) {
+    console.error(err);
+    haptics.notification('error');
+    showToast(t('toast_rename_group_error') + ` (${err.message || err})`, 'error');
+  }
+}
+
 // --- Object (Vehicle) Callback Event Handlers ---
 
 async function onAddObject(name, groupId, icon, bleDevice) {
@@ -626,6 +647,51 @@ async function onDeleteObject(objectId) {
   } catch (err) {
     console.error(err);
     showToast(t('toast_vehicle_delete_error'), 'error');
+  }
+}
+
+async function onEditObject(objectId, name, icon, bleDevice) {
+  try {
+    const { error: objError } = await supabase
+      .from('objects')
+      .update({
+        name,
+        icon,
+        last_updated_at: new Date().toISOString(),
+        last_updated_by: currentUser.id
+      })
+      .eq('id', objectId);
+
+    if (objError) throw objError;
+
+    // Update Ble Device pairing
+    if (!bleDevice || !bleDevice.trim()) {
+      // Delete pairing
+      const { error: delError } = await supabase
+        .from('user_object_devices')
+        .delete()
+        .eq('user_id', currentUser.id)
+        .eq('object_id', objectId);
+      if (delError) console.error('Failed to remove BLE association during edit:', delError);
+    } else {
+      // Upsert pairing
+      const { error: upsertError } = await supabase
+        .from('user_object_devices')
+        .upsert({
+          user_id: currentUser.id,
+          object_id: objectId,
+          ble_device_id: bleDevice
+        });
+      if (upsertError) console.error('Failed to upsert BLE association during edit:', upsertError);
+    }
+
+    haptics.notification('success');
+    showToast(t('toast_edit_vehicle_success', { name }), 'success');
+    await syncData();
+  } catch (err) {
+    console.error(err);
+    haptics.notification('error');
+    showToast(t('toast_edit_vehicle_error'), 'error');
   }
 }
 

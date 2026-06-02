@@ -1,27 +1,17 @@
-/**
- * ble.js — BLE Device Scanner & Selector Utility
- *
- * Provides a function to scan for nearby Bluetooth LE devices and populate
- * a <select> element. On native platforms (iOS/Android) it uses the
- * @capacitor-community/bluetooth-le plugin. On web it falls back gracefully
- * to showing a manual text-entry field.
- */
-
 import { BleClient } from '@capacitor-community/bluetooth-le';
 import { Capacitor } from '@capacitor/core';
 import { t } from './i18n';
+import { haptics } from './haptics';
 
-const SCAN_DURATION_MS = 5000; // How long to scan before stopping
+const SCAN_DURATION_MS = 5000;
 
-/**
- * @typedef {Object} BleDeviceEntry
- * @property {string} id    - Device ID / MAC address / UUID
- * @property {string} name  - Human-readable device name (may be empty)
- */
+// State
+let activeTargetInput = null;
+let activeTargetText = null;
+let inMemoryPairedDevices = new Map(); // id -> name (to merge into saved list)
+let modalInitialized = false;
 
-/**
- * Returns true when running on a native platform with BLE available.
- */
+// Return true if BLE client is available on native
 function isBleAvailable() {
   return (
     Capacitor.isNativePlatform() &&
@@ -31,27 +21,23 @@ function isBleAvailable() {
 
 /**
  * Scan for BLE devices and return a list of discovered entries.
- * @returns {Promise<BleDeviceEntry[]>}
  */
 async function scanForDevices() {
   await BleClient.initialize({ androidNeverForLocation: true });
-
-  const found = new Map(); // deviceId -> BleDeviceEntry (deduped)
+  const found = new Map();
 
   await new Promise((resolve, reject) => {
     const timeout = setTimeout(async () => {
       try {
         await BleClient.stopLEScan();
-      } catch (_) { /* ignore */ }
+      } catch (_) {}
       resolve();
     }, SCAN_DURATION_MS);
 
     BleClient.requestLEScan(
-      {
-        allowDuplicates: false,
-      },
+      { allowDuplicates: false },
       (result) => {
-        const id   = result.device?.deviceId;
+        const id = result.device?.deviceId;
         const name = result.device?.name || result.localName || '';
         if (id && !found.has(id)) {
           found.set(id, { id, name });
@@ -67,202 +53,357 @@ async function scanForDevices() {
 }
 
 /**
- * Wires up a "Scan" button + <select> + optional manual-entry <input> for a
- * BLE device picker.
- *
- * @param {Object} opts
- * @param {string}  opts.selectId        - ID of the <select> element
- * @param {string}  opts.scanBtnId       - ID of the Scan button
- * @param {string}  opts.manualRowId     - ID of the hidden manual-entry wrapper div
- * @param {string}  opts.manualInputId   - ID of the manual text <input>
- * @param {string}  [opts.currentValue]  - Pre-selected value to restore (if any)
+ * Registers active pairings so they show up under "Saved Devices" in the picker.
+ * Called from ui.js whenever groups/vehicles list updates.
  */
-export function initBleSelector({
-  selectId,
-  scanBtnId,
-  manualRowId,
-  manualInputId,
-  currentValue = '',
-}) {
-  const select    = document.getElementById(selectId);
-  const scanBtn   = document.getElementById(scanBtnId);
-  const manualRow = document.getElementById(manualRowId);
-  const manualInput = document.getElementById(manualInputId);
-
-  if (!select || !scanBtn) return;
-
-  /**
-   * Rebuilds the <select> options from a list of discovered devices.
-   * Always appends a "Enter manually" sentinel option at the end.
-   */
-  function populateSelect(devices, preselectValue = '') {
-    // Clear existing dynamic options (keep the first blank placeholder)
-    select.innerHTML = `<option value="">${t('ble_select_placeholder')}</option>`;
-
-    for (const dev of devices) {
-      const opt = document.createElement('option');
-      opt.value = dev.id;
-      opt.textContent = dev.name ? `${dev.name} (${dev.id})` : dev.id;
-      select.appendChild(opt);
-    }
-
-    // Sentinel "Enter manually" option
-    const manualOpt = document.createElement('option');
-    manualOpt.value = '__manual__';
-    manualOpt.textContent = t('ble_manual_entry');
-    select.appendChild(manualOpt);
-
-    // Restore previous value if it still exists in the list
-    if (preselectValue) {
-      const existingOpt = Array.from(select.options).find(o => o.value === preselectValue);
-      if (existingOpt) {
-        select.value = preselectValue;
-      } else if (preselectValue !== '') {
-        // Value is not in the list — add it as a synthetic option and select it
-        const customOpt = document.createElement('option');
-        customOpt.value = preselectValue;
-        customOpt.textContent = preselectValue;
-        // Insert before the "manual" sentinel
-        select.insertBefore(customOpt, manualOpt);
-        select.value = preselectValue;
-      }
-    }
-
-    handleSelectChange();
-  }
-
-  /** Shows/hides the manual input depending on select value. */
-  function handleSelectChange() {
-    if (select.value === '__manual__') {
-      manualRow.classList.remove('hidden');
-      if (manualInput) manualInput.focus();
-    } else {
-      manualRow.classList.add('hidden');
-    }
-  }
-
-  select.addEventListener('change', handleSelectChange);
-
-  /** Returns the currently chosen BLE device ID (either from select or manual input). */
-  // Exposed on the DOM element for convenient retrieval by the form handler
-  select._getBleValue = () => {
-    if (select.value === '__manual__') {
-      return manualInput ? manualInput.value.trim() : '';
-    }
-    return select.value;
-  };
-
-  // ---- Scan Button Handler ----
-  scanBtn.addEventListener('click', async () => {
-    if (!isBleAvailable()) {
-      // On web — just reveal the manual input
-      populateSelect([], currentValue);
-      select.value = '__manual__';
-      handleSelectChange();
-      return;
-    }
-
-    // Show spinner state
-    const originalLabel = scanBtn.textContent;
-    scanBtn.classList.add('scanning');
-    scanBtn.innerHTML = `<span class="scan-spinner"></span>${t('ble_scanning')}`;
-
-    try {
-      const devices = await scanForDevices();
-
-      if (devices.length === 0) {
-        populateSelect([], currentValue);
-        // Pick the "Enter manually" option automatically when nothing found
-        select.value = '__manual__';
-        handleSelectChange();
-      } else {
-        populateSelect(devices, currentValue);
-      }
-    } catch (err) {
-      console.error('[BLE Scan] Error during scan:', err);
-      // Fall back to manual entry
-      populateSelect([], currentValue);
-      select.value = '__manual__';
-      handleSelectChange();
-    } finally {
-      scanBtn.classList.remove('scanning');
-      scanBtn.textContent = t('ble_scan_btn');
+export function registerPairedDevices(pairedDevicesMap) {
+  if (!pairedDevicesMap) return;
+  Object.values(pairedDevicesMap).forEach(devId => {
+    if (devId && !inMemoryPairedDevices.has(devId)) {
+      // Store with empty name; it will fall back to displaying its ID
+      inMemoryPairedDevices.set(devId, { id: devId, name: '' });
     }
   });
-
-  // ---- Initial Population ----
-  // On first open, seed the list with bonded/connected devices if on native,
-  // otherwise just show the placeholder + manual option immediately.
-  (async () => {
-    if (!isBleAvailable()) {
-      // Web mode: only show "manual" option pre-populated
-      populateSelect([], currentValue);
-      if (currentValue) {
-        select.value = '__manual__';
-        if (manualInput) manualInput.value = currentValue;
-        handleSelectChange();
-      }
-      return;
-    }
-
-    try {
-      await BleClient.initialize({ androidNeverForLocation: true });
-
-      // Try to retrieve bonded devices (Android) or previously known devices
-      let knownDevices = [];
-
-      // Android: getBondedDevices
-      try {
-        const bonded = await BleClient.getBondedDevices();
-        if (Array.isArray(bonded)) {
-          for (const d of bonded) {
-            knownDevices.push({ id: d.deviceId, name: d.name || '' });
-          }
-        }
-      } catch (_) { /* not available on iOS */ }
-
-      // All platforms: getConnectedDevices (no service filter = all)
-      try {
-        const connected = await BleClient.getConnectedDevices([]);
-        if (Array.isArray(connected)) {
-          for (const d of connected) {
-            if (!knownDevices.find(k => k.id === d.deviceId)) {
-              knownDevices.push({ id: d.deviceId, name: d.name || '' });
-            }
-          }
-        }
-      } catch (_) { /* ignore */ }
-
-      populateSelect(knownDevices, currentValue);
-    } catch (err) {
-      console.warn('[BLE Selector] Could not load initial devices:', err);
-      populateSelect([], currentValue);
-      if (currentValue) {
-        select.value = currentValue !== '' ? currentValue : '';
-      }
-    }
-  })();
 }
 
 /**
- * Retrieves the selected BLE device ID from an initialised selector.
- * Works for both select-chosen and manually-typed values.
- *
- * @param {string} selectId   - ID of the <select> element
- * @param {string} manualInputId - ID of the manual <input> element
- * @returns {string}
+ * Persists a device to localStorage known list.
  */
-export function getBleValue(selectId, manualInputId) {
-  const select = document.getElementById(selectId);
-  if (!select) return '';
-  if (typeof select._getBleValue === 'function') {
-    return select._getBleValue();
+export function saveBluetoothDevice(id, name = '') {
+  if (!id) return;
+  try {
+    const local = localStorage.getItem('sp_saved_ble_devices');
+    const list = local ? JSON.parse(local) : [];
+    const existingIdx = list.findIndex(d => d.id === id);
+    if (existingIdx > -1) {
+      if (name) list[existingIdx].name = name;
+    } else {
+      list.push({ id, name });
+    }
+    localStorage.setItem('sp_saved_ble_devices', JSON.stringify(list));
+  } catch (e) {
+    console.error('Error saving BLE device to localStorage:', e);
   }
-  // Fallback: read the select value directly
-  const val = select.value;
-  if (val === '__manual__') {
-    const input = document.getElementById(manualInputId);
-    return input ? input.value.trim() : '';
+}
+
+/**
+ * Retrieves the compiled and deduped known/saved list.
+ */
+async function loadSavedDevices() {
+  const map = new Map();
+
+  // 1. In-memory pairings
+  inMemoryPairedDevices.forEach(d => {
+    map.set(d.id, { id: d.id, name: d.name || '' });
+  });
+
+  // 2. LocalStorage known devices
+  try {
+    const local = localStorage.getItem('sp_saved_ble_devices');
+    if (local) {
+      const parsed = JSON.parse(local);
+      if (Array.isArray(parsed)) {
+        parsed.forEach(d => {
+          if (d.id) {
+            const existing = map.get(d.id);
+            map.set(d.id, { id: d.id, name: d.name || (existing ? existing.name : '') });
+          }
+        });
+      }
+    }
+  } catch (_) {}
+
+  // 3. Native Bonded and Connected devices
+  if (isBleAvailable()) {
+    try {
+      await BleClient.initialize({ androidNeverForLocation: true });
+      // Bonded (Android only)
+      try {
+        const bonded = await BleClient.getBondedDevices();
+        if (Array.isArray(bonded)) {
+          bonded.forEach(d => {
+            const existing = map.get(d.deviceId);
+            map.set(d.deviceId, { id: d.deviceId, name: d.name || (existing ? existing.name : '') });
+          });
+        }
+      } catch (_) {}
+
+      // Connected (All platforms)
+      try {
+        const connected = await BleClient.getConnectedDevices([]);
+        if (Array.isArray(connected)) {
+          connected.forEach(d => {
+            const existing = map.get(d.deviceId);
+            map.set(d.deviceId, { id: d.deviceId, name: d.name || (existing ? existing.name : '') });
+          });
+        }
+      } catch (_) {}
+    } catch (err) {
+      console.warn('[BLE] Could not initialize for saved devices list:', err);
+    }
   }
-  return val;
+
+  // Fallback testing item if empty
+  if (map.size === 0) {
+    map.set('CAR_BLE_MOCK_DEV', { id: 'CAR_BLE_MOCK_DEV', name: 'Mock OBD-II Adapter' });
+  }
+
+  return Array.from(map.values());
+}
+
+/**
+ * Dynamically updates the display text on the form trigger button.
+ */
+export function updateTriggerLabel(textEl, value) {
+  if (!value) {
+    textEl.textContent = t('ble_select_placeholder');
+    textEl.classList.add('placeholder');
+    return;
+  }
+  textEl.classList.remove('placeholder');
+
+  // Look up name in localStorage or active pairings
+  let name = '';
+  const inMem = inMemoryPairedDevices.get(value);
+  if (inMem && inMem.name) name = inMem.name;
+
+  if (!name) {
+    try {
+      const local = localStorage.getItem('sp_saved_ble_devices');
+      if (local) {
+        const parsed = JSON.parse(local);
+        const found = parsed.find(d => d.id === value);
+        if (found && found.name) name = found.name;
+      }
+    } catch (_) {}
+  }
+
+  if (value === 'CAR_BLE_MOCK_DEV') {
+    name = 'Mock OBD-II Adapter';
+  }
+
+  textEl.textContent = name ? `${name} (${value})` : value;
+}
+
+/**
+ * Initializes a trigger button to open the BLE picker.
+ */
+export function initBleSelector({
+  triggerBtnId,
+  triggerTextId,
+  inputId,
+  currentValue = '',
+}) {
+  const triggerBtn = document.getElementById(triggerBtnId);
+  const triggerText = document.getElementById(triggerTextId);
+  const input = document.getElementById(inputId);
+
+  if (!triggerBtn || !triggerText || !input) return;
+
+  // Initialize input and trigger display text
+  input.value = currentValue;
+  updateTriggerLabel(triggerText, currentValue);
+
+  // Bind click event to trigger picker modal
+  triggerBtn.addEventListener('click', () => {
+    haptics.impact('light');
+    openBlePickerModal({
+      targetInput: input,
+      targetText: triggerText,
+      currentValue: input.value
+    });
+  });
+
+  // Ensure modal listeners are bound once globally
+  setupBlePickerModalHandlers();
+}
+
+/**
+ * Setup global picker modal click handlers once.
+ */
+function setupBlePickerModalHandlers() {
+  if (modalInitialized) return;
+  modalInitialized = true;
+
+  const modal = document.getElementById('ble-picker-modal');
+  const scanBtn = document.getElementById('ble-picker-scan-btn');
+
+  if (!modal) return;
+
+  // Scan button click
+  if (scanBtn) {
+    scanBtn.addEventListener('click', async () => {
+      if (!isBleAvailable()) {
+        // Fallback or warning
+        haptics.notification('warning');
+        alert(t('ble_scan_error'));
+        return;
+      }
+
+      // Scan process UI
+      scanBtn.classList.add('scanning');
+      scanBtn.innerHTML = `<span class="scan-spinner"></span>${t('ble_scanning')}`;
+
+      const nearbyList = document.getElementById('ble-nearby-list');
+      if (nearbyList) {
+        nearbyList.innerHTML = `<p class="empty-state">${t('ble_scanning')}</p>`;
+      }
+
+      try {
+        const devices = await scanForDevices();
+        renderNearbyDevices(devices);
+      } catch (err) {
+        console.error('[BLE Picker] Scan error:', err);
+        haptics.notification('error');
+        if (nearbyList) {
+          nearbyList.innerHTML = `<p class="empty-state" style="color:var(--danger);">${t('ble_scan_error')}</p>`;
+        }
+      } finally {
+        scanBtn.classList.remove('scanning');
+        scanBtn.textContent = t('ble_scan_btn');
+      }
+    });
+  }
+}
+
+/**
+ * Opens the Bluetooth selector modal and populates lists.
+ */
+async function openBlePickerModal({ targetInput, targetText, currentValue }) {
+  activeTargetInput = targetInput;
+  activeTargetText = targetText;
+
+  const modal = document.getElementById('ble-picker-modal');
+  const nearbyList = document.getElementById('ble-nearby-list');
+
+  if (!modal) return;
+
+  // Clear previous scan results
+  if (nearbyList) {
+    nearbyList.innerHTML = `<p class="empty-state" data-i18n="ble_no_nearby">${t('ble_no_nearby')}</p>`;
+  }
+
+  // Load and render Saved Devices
+  const saved = await loadSavedDevices();
+  renderSavedDevices(saved, currentValue);
+
+  // Open modal
+  modal.showModal();
+}
+
+/**
+ * Handles selecting a BLE Device, updating input, triggering haptic, and closing modal.
+ */
+function selectDevice(id, name = '') {
+  if (activeTargetInput && activeTargetText) {
+    activeTargetInput.value = id;
+    updateTriggerLabel(activeTargetText, id);
+    if (id) {
+      saveBluetoothDevice(id, name);
+    }
+  }
+
+  const modal = document.getElementById('ble-picker-modal');
+  if (modal) {
+    modal.close();
+  }
+}
+
+/**
+ * Render the Saved Devices list in the modal.
+ */
+function renderSavedDevices(devices, currentValue) {
+  const listEl = document.getElementById('ble-saved-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = '';
+
+  // 1. None Option (Disconnect)
+  const noneBtn = document.createElement('button');
+  noneBtn.type = 'button';
+  noneBtn.className = `ble-device-item disconnect-item ${!currentValue ? 'selected' : ''}`;
+  noneBtn.innerHTML = `
+    <div class="ble-device-info">
+      <span class="ble-device-icon">❌</span>
+      <div class="ble-device-details">
+        <span class="ble-device-name">${t('ble_disconnect_option')}</span>
+        <span class="ble-device-id">None</span>
+      </div>
+    </div>
+  `;
+  noneBtn.addEventListener('click', () => {
+    haptics.impact('light');
+    selectDevice('', '');
+  });
+  listEl.appendChild(noneBtn);
+
+  // 2. Saved list items
+  if (devices.length === 0) {
+    const empty = document.createElement('p');
+    empty.className = 'empty-state';
+    empty.textContent = t('ble_no_saved');
+    listEl.appendChild(empty);
+    return;
+  }
+
+  devices.forEach(dev => {
+    const isSelected = dev.id === currentValue;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `ble-device-item ${isSelected ? 'selected' : ''}`;
+    btn.innerHTML = `
+      <div class="ble-device-info">
+        <span class="ble-device-icon">📱</span>
+        <div class="ble-device-details">
+          <span class="ble-device-name">${dev.name || dev.id}</span>
+          <span class="ble-device-id">${dev.id}</span>
+        </div>
+      </div>
+      <span class="ble-device-status-badge">${isSelected ? 'Active' : 'Saved'}</span>
+    `;
+    btn.addEventListener('click', () => {
+      haptics.impact('medium');
+      selectDevice(dev.id, dev.name);
+    });
+    listEl.appendChild(btn);
+  });
+}
+
+/**
+ * Render the Nearby Scanned Devices list.
+ */
+function renderNearbyDevices(devices) {
+  const listEl = document.getElementById('ble-nearby-list');
+  if (!listEl) return;
+
+  listEl.innerHTML = '';
+
+  if (devices.length === 0) {
+    listEl.innerHTML = `<p class="empty-state">${t('ble_no_devices')}</p>`;
+    return;
+  }
+
+  const currentValue = activeTargetInput ? activeTargetInput.value : '';
+
+  devices.forEach(dev => {
+    const isSelected = dev.id === currentValue;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `ble-device-item ${isSelected ? 'selected' : ''}`;
+    btn.innerHTML = `
+      <div class="ble-device-info">
+        <span class="ble-device-icon">📶</span>
+        <div class="ble-device-details">
+          <span class="ble-device-name">${dev.name || 'Unknown Device'}</span>
+          <span class="ble-device-id">${dev.id}</span>
+        </div>
+      </div>
+      <span class="ble-device-status-badge">${isSelected ? 'Active' : 'Nearby'}</span>
+    `;
+    btn.addEventListener('click', () => {
+      haptics.impact('medium');
+      selectDevice(dev.id, dev.name);
+    });
+    listEl.appendChild(btn);
+  });
 }

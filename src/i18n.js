@@ -19,6 +19,7 @@ const translations = {
     "create_group_btn": "Create New Group",
     "register_vehicle_btn": "Register New Vehicle",
     "language_label": "Language:",
+    "settings_title": "Settings",
     
     // Auth Overlay
     "welcome_title": "Welcome to SharedParking",
@@ -68,7 +69,19 @@ const translations = {
     "ble_select_placeholder": "-- Select a device --",
     "ble_manual_entry": "✏️ Enter manually...",
     "ble_scan_error": "Scan failed. Enter device ID manually.",
+    "ble_picker_title": "Select Bluetooth Device",
+    "ble_saved_devices": "Saved Devices",
+    "ble_nearby_devices": "Nearby Devices",
+    "ble_manual_entry_title": "Manual Entry",
+    "ble_no_saved": "No saved devices",
+    "ble_no_nearby": "No nearby devices. Tap Scan to search.",
+    "ble_disconnect_option": "None (Disconnect Bluetooth)",
     "register": "Register",
+    
+    // Edit Vehicle
+    "edit_vehicle_title": "Edit Vehicle",
+    "toast_edit_vehicle_success": "Vehicle \"{name}\" updated successfully!",
+    "toast_edit_vehicle_error": "Failed to update vehicle.",
     // Pair BLE
     "pair_device_title": "Associate Bluetooth Device",
     "pair_device_desc": "Define the Bluetooth LE MAC address or UUID that represents your connection to this vehicle on your phone.",
@@ -95,6 +108,8 @@ const translations = {
     "toast_logout_failed": "Logout failed.",
     "toast_create_group_success": "Created group \"{name}\"!",
     "toast_create_group_error": "Failed to create group.",
+    "toast_rename_group_success": "Group renamed to \"{name}\"!",
+    "toast_rename_group_error": "Failed to rename group.",
     "toast_group_not_found": "Group not found. Verify the invite code/ID.",
     "toast_already_member": "You are already a member of this group.",
     "toast_join_group_success": "Joined group \"{name}\"!",
@@ -157,6 +172,7 @@ const translations = {
     "create_group_btn": "Crear Nuevo Grupo",
     "register_vehicle_btn": "Registrar Vehículo",
     "language_label": "Idioma:",
+    "settings_title": "Ajustes",
     
     // Auth Overlay
     "welcome_title": "Bienvenido a SharedParking",
@@ -206,7 +222,19 @@ const translations = {
     "ble_select_placeholder": "-- Selecciona un dispositivo --",
     "ble_manual_entry": "✏️ Ingresar manualmente...",
     "ble_scan_error": "Escaneo fallido. Ingresa el ID del dispositivo manualmente.",
+    "ble_picker_title": "Seleccionar Dispositivo Bluetooth",
+    "ble_saved_devices": "Dispositivos Guardados",
+    "ble_nearby_devices": "Dispositivos Cercanos",
+    "ble_manual_entry_title": "Entrada Manual",
+    "ble_no_saved": "No hay dispositivos guardados",
+    "ble_no_nearby": "No hay dispositivos cercanos. Pulsa Escanear para buscar.",
+    "ble_disconnect_option": "Ninguno (Desconectar Bluetooth)",
     "register": "Registrar",
+    
+    // Edit Vehicle
+    "edit_vehicle_title": "Editar Vehículo",
+    "toast_edit_vehicle_success": "¡Vehículo \"{name}\" actualizado con éxito!",
+    "toast_edit_vehicle_error": "Error al actualizar el vehículo.",
     // Pair BLE
     "pair_device_title": "Asociar Dispositivo Bluetooth",
     "pair_device_desc": "Define la dirección MAC o UUID de Bluetooth LE que representa tu conexión a este vehículo en tu teléfono.",
@@ -233,6 +261,8 @@ const translations = {
     "toast_logout_failed": "Error al cerrar sesión.",
     "toast_create_group_success": "¡Grupo \"{name}\" creado!",
     "toast_create_group_error": "Error al crear el grupo.",
+    "toast_rename_group_success": "¡Grupo renombrado a \"{name}\"!",
+    "toast_rename_group_error": "Error al renombrar el grupo.",
     "toast_group_not_found": "Grupo no encontrado. Verifica el código/ID de invitación.",
     "toast_already_member": "Ya eres miembro de este grupo.",
     "toast_join_group_success": "¡Te has unido al grupo \"{name}\"!",

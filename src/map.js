@@ -7,7 +7,6 @@ import { t } from './i18n';
 let mapInstance = null;
 let mapInitPromise = null;
 let markersGroup = null;
-let watchId = null;
 let userLocationMarker = null;
 
 // Initial default center (e.g. New York)
@@ -101,8 +100,7 @@ export async function initMap(elementId = 'map') {
       // Initial user marker location
       updateUserLocationMarker(lat, lng);
 
-      // Start watching user's location to keep the blue dot updated in real-time
-      startWatchingLocation();
+
 
       // Add click vibration behavior to zoom buttons, etc.
       mapInstance.on('zoomend', () => {
@@ -154,42 +152,12 @@ export function updateUserLocationMarker(lat, lng) {
   }
 }
 
-/**
- * Starts watching user's location to update the blue dot in real-time.
- */
-async function startWatchingLocation() {
-  if (watchId !== null) return;
-  try {
-    watchId = await Geolocation.watchPosition({
-      enableHighAccuracy: true,
-      timeout: 10000
-    }, (position, err) => {
-      if (err) {
-        console.error('[Map] Error watching location:', err);
-        return;
-      }
-      if (position && position.coords) {
-        const { latitude, longitude } = position.coords;
-        updateUserLocationMarker(latitude, longitude);
-      }
-    });
-  } catch (err) {
-    console.error('[Map] Failed to start watching location:', err);
-  }
-}
+
 
 /**
  * Clean up the Leaflet map instance and related markers group on logout.
  */
 export function destroyMap() {
-  if (watchId !== null) {
-    try {
-      Geolocation.clearWatch({ id: watchId });
-    } catch (err) {
-      console.warn('[Map] Error clearing location watch:', err);
-    }
-    watchId = null;
-  }
   if (userLocationMarker) {
     try {
       userLocationMarker.remove();

@@ -64,6 +64,10 @@
 	<string>We need your location to show your position on the map and find nearby parking spots.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>We need your location to keep tracking nearby parking spots even when the app is in the background.</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>We need Bluetooth access to detect your car beacon and log location updates automatically.</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>We need Bluetooth access to detect your car beacon.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

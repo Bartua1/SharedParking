@@ -1,11 +1,96 @@
 import { haptics } from './haptics';
 import { t, setLanguage } from './i18n';
 import { Capacitor } from '@capacitor/core';
-import { initBleSelector, getBleValue } from './ble';
+import { initBleSelector, registerPairedDevices, updateTriggerLabel } from './ble';
 
 let uiCallbacks = {};
 let openAccordions = new Set(); // Store open group accordion IDs to preserve state on redraw
 let isSignUpMode = false;
+
+function refreshBleTriggers() {
+  const addText = document.getElementById('add-object-ble-trigger-text');
+  const addVal = document.getElementById('add-object-ble-device')?.value;
+  if (addText) updateTriggerLabel(addText, addVal);
+
+  const editText = document.getElementById('edit-object-ble-trigger-text');
+  const editVal = document.getElementById('edit-object-ble-device')?.value;
+  if (editText) updateTriggerLabel(editText, editVal);
+
+  const pairText = document.getElementById('pair-device-ble-trigger-text');
+  const pairVal = document.getElementById('pair-device-ble-id')?.value;
+  if (pairText) updateTriggerLabel(pairText, pairVal);
+}
+
+// Bottom Drawer state variables
+let sidenavElement = null;
+let backdropElement = null;
+let drawerTitleElement = null;
+let drawerSettingsBtnElement = null;
+
+const GEAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+const BACK_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>`;
+
+export function openSidenav() {
+  haptics.impact('medium');
+  if (sidenavElement) {
+    sidenavElement.classList.add('active');
+    sidenavElement.setAttribute('aria-hidden', 'false');
+  }
+  if (backdropElement) {
+    backdropElement.classList.add('active');
+  }
+}
+
+export function closeSidenav() {
+  haptics.impact('light');
+  if (sidenavElement) {
+    sidenavElement.classList.remove('active');
+    sidenavElement.setAttribute('aria-hidden', 'true');
+    sidenavElement.classList.remove('show-settings');
+    sidenavElement.style.transform = ''; // Clear inline styles
+  }
+  if (backdropElement) {
+    backdropElement.classList.remove('active');
+  }
+  if (drawerTitleElement) {
+    drawerTitleElement.textContent = t('my_space');
+    drawerTitleElement.setAttribute('data-i18n', 'my_space');
+  }
+  if (drawerSettingsBtnElement) {
+    drawerSettingsBtnElement.innerHTML = GEAR_SVG;
+    drawerSettingsBtnElement.setAttribute('title', t('settings_title'));
+    drawerSettingsBtnElement.setAttribute('data-i18n-title', 'settings_title');
+  }
+}
+
+export function toggleSettingsView() {
+  haptics.impact('light');
+  if (!sidenavElement) return;
+  const isShowingSettings = sidenavElement.classList.contains('show-settings');
+  if (isShowingSettings) {
+    sidenavElement.classList.remove('show-settings');
+    if (drawerTitleElement) {
+      drawerTitleElement.textContent = t('my_space');
+      drawerTitleElement.setAttribute('data-i18n', 'my_space');
+    }
+    if (drawerSettingsBtnElement) {
+      drawerSettingsBtnElement.innerHTML = GEAR_SVG;
+      drawerSettingsBtnElement.setAttribute('title', t('settings_title'));
+      drawerSettingsBtnElement.setAttribute('data-i18n-title', 'settings_title');
+    }
+  } else {
+    sidenavElement.classList.add('show-settings');
+    if (drawerTitleElement) {
+      drawerTitleElement.textContent = t('settings_title');
+      drawerTitleElement.setAttribute('data-i18n', 'settings_title');
+    }
+    if (drawerSettingsBtnElement) {
+      drawerSettingsBtnElement.innerHTML = BACK_SVG;
+      drawerSettingsBtnElement.setAttribute('title', t('back'));
+      drawerSettingsBtnElement.setAttribute('data-i18n-title', 'back');
+    }
+  }
+}
 
 /**
  * Helper to update auth UI based on registration or login mode.
@@ -52,8 +137,10 @@ export function initUI(callbacks) {
   // --- Element Hooks ---
   const toggleSidenavBtn = document.getElementById('toggle-sidenav-btn');
   const closeSidenavBtn = document.getElementById('close-sidenav-btn');
-  const sidenav = document.getElementById('sidenav');
-  const backdrop = document.getElementById('sidenav-backdrop');
+  sidenavElement = document.getElementById('sidenav');
+  backdropElement = document.getElementById('sidenav-backdrop');
+  drawerTitleElement = document.getElementById('drawer-title');
+  drawerSettingsBtnElement = document.getElementById('drawer-settings-btn');
   const userPill = document.getElementById('header-user-pill');
   
   const authForm = document.getElementById('auth-form');
@@ -73,11 +160,13 @@ export function initUI(callbacks) {
   const createGroupModal = document.getElementById('create-group-modal');
   const joinGroupModal = document.getElementById('join-group-modal');
   const addObjectModal = document.getElementById('add-object-modal');
+  const editObjectModal = document.getElementById('edit-object-modal');
 
   // Forms
   const createGroupForm = document.getElementById('create-group-form');
   const joinGroupForm = document.getElementById('join-group-form');
   const addObjectForm = document.getElementById('add-object-form');
+  const editObjectForm = document.getElementById('edit-object-form');
 
   // Modal Cancel Buttons (delegate to each dialog's own close-modal-btn)
   document.addEventListener('click', (e) => {
@@ -93,6 +182,7 @@ export function initUI(callbacks) {
       const lang = btn.dataset.lang;
       haptics.impact('light');
       setLanguage(lang);
+      refreshBleTriggers();
       if (uiCallbacks.onLanguageChange) {
         uiCallbacks.onLanguageChange(lang);
       }
@@ -100,26 +190,64 @@ export function initUI(callbacks) {
   });
 
   // --- Sidenav Interactions ---
-  const openSidenav = () => {
-    haptics.impact('medium');
-    sidenav.classList.add('active');
-    sidenav.setAttribute('aria-hidden', 'false');
-    backdrop.classList.add('active');
-  };
-
-  const closeSidenav = () => {
-    haptics.impact('light');
-    sidenav.classList.remove('active');
-    sidenav.setAttribute('aria-hidden', 'true');
-    backdrop.classList.remove('active');
-  };
-
   toggleSidenavBtn.addEventListener('click', openSidenav);
   if (userPill) {
     userPill.addEventListener('click', openSidenav);
   }
   closeSidenavBtn.addEventListener('click', closeSidenav);
-  backdrop.addEventListener('click', closeSidenav);
+  backdropElement.addEventListener('click', closeSidenav);
+  if (drawerSettingsBtnElement) {
+    drawerSettingsBtnElement.addEventListener('click', toggleSettingsView);
+  }
+
+  // --- Drag-to-dismiss bottom sheet ---
+  const dragHandleWrapper = document.querySelector('.drag-handle-wrapper');
+  let startY = 0;
+  let currentY = 0;
+  let isDragging = false;
+
+  if (dragHandleWrapper && sidenavElement) {
+    const onPointerDown = (e) => {
+      startY = e.clientY;
+      isDragging = true;
+      sidenavElement.style.transition = 'none';
+      dragHandleWrapper.setPointerCapture(e.pointerId);
+      dragHandleWrapper.style.cursor = 'grabbing';
+    };
+
+    const onPointerMove = (e) => {
+      if (!isDragging) return;
+      currentY = e.clientY;
+      const deltaY = currentY - startY;
+      
+      // Only allow downward drag/dismiss
+      if (deltaY > 0) {
+        sidenavElement.style.transform = `translate(-50%, ${deltaY}px)`;
+      }
+    };
+
+    const onPointerUp = (e) => {
+      if (!isDragging) return;
+      isDragging = false;
+      dragHandleWrapper.releasePointerCapture(e.pointerId);
+      sidenavElement.style.transition = '';
+      dragHandleWrapper.style.cursor = '';
+      
+      const deltaY = currentY - startY;
+      if (deltaY > 100) {
+        closeSidenav();
+      } else {
+        sidenavElement.style.transform = '';
+      }
+      startY = 0;
+      currentY = 0;
+    };
+
+    dragHandleWrapper.addEventListener('pointerdown', onPointerDown);
+    dragHandleWrapper.addEventListener('pointermove', onPointerMove);
+    dragHandleWrapper.addEventListener('pointerup', onPointerUp);
+    dragHandleWrapper.addEventListener('pointercancel', onPointerUp);
+  }
 
   // --- Auth Dialog Actions ---
   const authCard = document.querySelector('.auth-card');
@@ -134,6 +262,9 @@ export function initUI(callbacks) {
 
   authBackBtn.addEventListener('click', () => {
     haptics.impact('light');
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
     authCard.classList.remove('show-screen-2');
     authCard.classList.add('show-screen-1');
   });
@@ -223,13 +354,24 @@ export function initUI(callbacks) {
   });
 
   // Emoji picker grid bindings inside Add Object dialog
-  const emojiOptions = document.querySelectorAll('.emoji-option');
-  emojiOptions.forEach(opt => {
+  const addEmojiOptions = document.querySelectorAll('#add-object-modal .emoji-option');
+  addEmojiOptions.forEach(opt => {
     opt.addEventListener('click', () => {
       haptics.impact('light');
-      emojiOptions.forEach(o => o.classList.remove('selected'));
+      addEmojiOptions.forEach(o => o.classList.remove('selected'));
       opt.classList.add('selected');
       document.getElementById('add-object-icon').value = opt.dataset.emoji;
+    });
+  });
+
+  // Emoji picker grid bindings inside Edit Object dialog
+  const editEmojiOptions = document.querySelectorAll('#edit-object-modal .emoji-option');
+  editEmojiOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      haptics.impact('light');
+      editEmojiOptions.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      document.getElementById('edit-object-icon').value = opt.dataset.emoji;
     });
   });
 
@@ -258,17 +400,33 @@ export function initUI(callbacks) {
     const name = document.getElementById('add-object-name').value;
     const groupId = document.getElementById('add-object-group-select').value;
     const icon = document.getElementById('add-object-icon').value;
-    const bleDevice = getBleValue('add-object-ble-device-select', 'add-object-ble-device');
+    const bleDevice = document.getElementById('add-object-ble-device').value;
 
     addObjectModal.close();
     addObjectForm.reset();
+    updateTriggerLabel(document.getElementById('add-object-ble-trigger-text'), '');
     
     // Reset Emoji Picker Selection
-    emojiOptions.forEach(o => o.classList.remove('selected'));
-    document.querySelector('.emoji-option[data-emoji="🚗"]').classList.add('selected');
+    addEmojiOptions.forEach(o => o.classList.remove('selected'));
+    document.querySelector('#add-object-modal .emoji-option[data-emoji="🚗"]').classList.add('selected');
     document.getElementById('add-object-icon').value = '🚗';
 
     await uiCallbacks.onAddObject(name, groupId, icon, bleDevice);
+  });
+
+  editObjectForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    haptics.impact('medium');
+    const objectId = document.getElementById('edit-object-id').value;
+    const name = document.getElementById('edit-object-name').value;
+    const icon = document.getElementById('edit-object-icon').value;
+    const bleDevice = document.getElementById('edit-object-ble-device').value;
+
+    editObjectModal.close();
+    editObjectForm.reset();
+    updateTriggerLabel(document.getElementById('edit-object-ble-trigger-text'), '');
+
+    await uiCallbacks.onEditObject(objectId, name, icon, bleDevice);
   });
 
 
@@ -281,9 +439,10 @@ export function initUI(callbacks) {
     e.preventDefault();
     haptics.impact('medium');
     const objectId = document.getElementById('pair-device-object-id').value;
-    const bleId = getBleValue('pair-device-ble-select', 'pair-device-ble-id');
+    const bleId = document.getElementById('pair-device-ble-id').value;
     pairDeviceModal.close();
     pairDeviceForm.reset();
+    updateTriggerLabel(document.getElementById('pair-device-ble-trigger-text'), '');
     await uiCallbacks.onPairDevice(objectId, bleId);
   });
 
@@ -313,10 +472,9 @@ export function initUI(callbacks) {
     }
     // Initialise the BLE selector fresh whenever the modal is opened
     initBleSelector({
-      selectId:      'add-object-ble-device-select',
-      scanBtnId:     'add-object-ble-scan-btn',
-      manualRowId:   'add-object-ble-manual-row',
-      manualInputId: 'add-object-ble-device',
+      triggerBtnId:  'add-object-ble-trigger-btn',
+      triggerTextId: 'add-object-ble-trigger-text',
+      inputId:       'add-object-ble-device',
       currentValue:  '',
     });
     document.getElementById('add-object-modal').showModal();
@@ -329,7 +487,6 @@ export function initUI(callbacks) {
     resetManagePanels();
     if (!isOpen) {
       gmSettingsPanel.classList.remove('hidden');
-      document.getElementById('gm-group-name-input').focus();
     }
   });
 
@@ -397,6 +554,15 @@ export function initUI(callbacks) {
     document.getElementById('leave-group-modal-text').textContent = t('confirm_leave_group', { name: groupName });
     leaveGroupModal.showModal();
   };
+
+  // Clear focus/keyboard when any dialog is closed
+  document.querySelectorAll('dialog').forEach(dialog => {
+    dialog.addEventListener('close', () => {
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+    });
+  });
 }
 
 /**
@@ -404,7 +570,7 @@ export function initUI(callbacks) {
  */
 export function showAuthOverlay(show) {
   const overlay = document.getElementById('auth-overlay');
-  const headerContainer = document.getElementById('app-header-container');
+  const menuContainer = document.getElementById('app-menu-container');
   const authCard = document.querySelector('.auth-card');
 
   if (show) {
@@ -416,13 +582,16 @@ export function showAuthOverlay(show) {
 
     overlay.classList.add('active');
     overlay.setAttribute('aria-hidden', 'false');
-    if (headerContainer) headerContainer.style.display = 'none';
+    if (menuContainer) menuContainer.style.display = 'none';
   } else {
     overlay.classList.remove('active');
     overlay.setAttribute('aria-hidden', 'true');
-    if (headerContainer) headerContainer.style.display = 'flex';
+    if (menuContainer) menuContainer.style.display = 'flex';
     // Clear inputs
     document.getElementById('auth-form').reset();
+    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+      document.activeElement.blur();
+    }
   }
 }
 
@@ -454,6 +623,7 @@ export function updateProfileUI(profile) {
  * Renders the Groups accordion & populated object targets inside the Sidenav.
  */
 export function updateGroupsUI(groups, objects, pairedDevicesMap = {}) {
+  registerPairedDevices(pairedDevicesMap);
   const groupsListContainer = document.getElementById('groups-list');
   const groupSelect = document.getElementById('add-object-group-select');
 
@@ -529,7 +699,7 @@ export function updateGroupsUI(groups, objects, pairedDevicesMap = {}) {
         `;
         const simulateBtnHtml = pairedBleId ? `
           <!-- Simulate BLE Disconnect Button -->
-          <button class="icon-btn ble-disconnect-btn" style="padding:4px; color:var(--accent);" title="${t('simulate_tooltip')}">
+          <button type="button" class="icon-btn ble-disconnect-btn" style="padding:4px; color:var(--accent);" title="${t('simulate_tooltip')}">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"></path></svg>
           </button>
         ` : '';
@@ -547,16 +717,16 @@ export function updateGroupsUI(groups, objects, pairedDevicesMap = {}) {
           </div>
           <div class="object-actions">
             <!-- Locate Button -->
-            <button class="icon-btn locate-obj-btn" style="padding:4px;" title="${t('locate_tooltip')}">
+            <button type="button" class="icon-btn locate-obj-btn" style="padding:4px;" title="${t('locate_tooltip')}">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line></svg>
             </button>
             <!-- Pair BLE Button -->
-            <button class="icon-btn pair-ble-btn" style="padding:4px; color:${bleIconColor};" title="${bleIconTitle}">
+            <button type="button" class="icon-btn pair-ble-btn" style="padding:4px; color:${bleIconColor};" title="${bleIconTitle}">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7 7 10 10-5 5V2l5 5L7 17"></path></svg>
             </button>
             ${simulateBtnHtml}
             <!-- Delete Button -->
-            <button class="icon-btn delete-obj-btn" style="padding:4px; color:var(--danger);" title="${t('remove_tooltip')}">
+            <button type="button" class="icon-btn delete-obj-btn" style="padding:4px; color:var(--danger);" title="${t('remove_tooltip')}">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
             </button>
           </div>
@@ -565,28 +735,58 @@ export function updateGroupsUI(groups, objects, pairedDevicesMap = {}) {
         // Locate Button Action
         item.querySelector('.locate-obj-btn').addEventListener('click', (e) => {
           e.stopPropagation();
+          e.preventDefault();
           haptics.impact('light');
           if (obj.last_latitude && obj.last_longitude) {
             uiCallbacks.onLocateObject(parseFloat(obj.last_latitude), parseFloat(obj.last_longitude));
             // Close Sidenav automatically on mobile to see the map
-            document.getElementById('sidenav').classList.remove('active');
-            document.getElementById('sidenav-backdrop').classList.remove('active');
+            closeSidenav();
           } else {
             showToast(t('toast_no_coordinates', { name: obj.name }), 'warning');
           }
         });
 
+        // Click on vehicle details (object-info) triggers Edit dialog
+        item.querySelector('.object-info').addEventListener('click', (e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          haptics.impact('light');
+
+          document.getElementById('edit-object-id').value = obj.id;
+          document.getElementById('edit-object-name').value = obj.name;
+          document.getElementById('edit-object-icon').value = obj.icon || '🚗';
+
+          const editEmojiOptions = document.querySelectorAll('#edit-object-modal .emoji-option');
+          editEmojiOptions.forEach(opt => {
+            if (opt.dataset.emoji === (obj.icon || '🚗')) {
+              opt.classList.add('selected');
+            } else {
+              opt.classList.remove('selected');
+            }
+          });
+
+          // Initialize BLE selector for edit dialog
+          initBleSelector({
+            triggerBtnId:  'edit-object-ble-trigger-btn',
+            triggerTextId: 'edit-object-ble-trigger-text',
+            inputId:       'edit-object-ble-device',
+            currentValue:  pairedBleId,
+          });
+
+          document.getElementById('edit-object-modal').showModal();
+        });
+
         // Pair BLE Action
         item.querySelector('.pair-ble-btn').addEventListener('click', (e) => {
           e.stopPropagation();
+          e.preventDefault();
           haptics.impact('light');
           document.getElementById('pair-device-object-id').value = obj.id;
           // Re-initialise the BLE selector with the current paired value each time the modal opens
           initBleSelector({
-            selectId:      'pair-device-ble-select',
-            scanBtnId:     'pair-device-ble-scan-btn',
-            manualRowId:   'pair-device-ble-manual-row',
-            manualInputId: 'pair-device-ble-id',
+            triggerBtnId:  'pair-device-ble-trigger-btn',
+            triggerTextId: 'pair-device-ble-trigger-text',
+            inputId:       'pair-device-ble-id',
             currentValue:  pairedBleId,
           });
           document.getElementById('pair-device-modal').showModal();
@@ -597,6 +797,7 @@ export function updateGroupsUI(groups, objects, pairedDevicesMap = {}) {
         if (disconnectBtn) {
           disconnectBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
+            e.preventDefault();
             haptics.notification('warning');
             uiCallbacks.onSimulateBleDisconnect(pairedBleId, obj.id);
           });
@@ -605,6 +806,7 @@ export function updateGroupsUI(groups, objects, pairedDevicesMap = {}) {
         // Delete Button Action
         item.querySelector('.delete-obj-btn').addEventListener('click', async (e) => {
           e.stopPropagation();
+          e.preventDefault();
           haptics.notification('warning');
           if (confirm(t('confirm_delete_vehicle', { name: obj.name }))) {
             await uiCallbacks.onDeleteObject(obj.id);
@@ -621,24 +823,24 @@ export function updateGroupsUI(groups, objects, pairedDevicesMap = {}) {
     const actionsRow = document.createElement('div');
     actionsRow.className = 'group-actions-row';
     actionsRow.innerHTML = `
-      <button class="btn btn-pill-sm group-manage-btn" title="${t('manage_group_tooltip') || 'Manage Group'}" style="display:flex;align-items:center;gap:5px;">
+      <button type="button" class="btn btn-pill-sm group-manage-btn" title="${t('manage_group_tooltip') || 'Manage Group'}" style="display:flex;align-items:center;gap:5px;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
         ${t('manage_group_btn') || 'Manage'}
       </button>
-      <button class="icon-btn leave-group-btn" title="${t('leave_group')}" style="color:var(--danger); padding:4px; border-radius:50%;">
+      <button type="button" class="icon-btn leave-group-btn" title="${t('leave_group')}" style="color:var(--danger); padding:4px; border-radius:50%;">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
       </button>
     `;
 
     actionsRow.querySelector('.group-manage-btn').addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       haptics.impact('light');
       // Initialise the BLE selector fresh (no pre-selected value) when adding a new vehicle
       initBleSelector({
-        selectId:      'add-object-ble-device-select',
-        scanBtnId:     'add-object-ble-scan-btn',
-        manualRowId:   'add-object-ble-manual-row',
-        manualInputId: 'add-object-ble-device',
+        triggerBtnId:  'add-object-ble-trigger-btn',
+        triggerTextId: 'add-object-ble-trigger-text',
+        inputId:       'add-object-ble-device',
         currentValue:  '',
       });
       if (uiCallbacks._openManageModal) {
@@ -648,6 +850,7 @@ export function updateGroupsUI(groups, objects, pairedDevicesMap = {}) {
 
     actionsRow.querySelector('.leave-group-btn').addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
       haptics.notification('warning');
       if (uiCallbacks._openLeaveModal) {
         uiCallbacks._openLeaveModal(group.id, group.name);
