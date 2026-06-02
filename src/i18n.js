@@ -115,7 +115,11 @@ const translations = {
     "toast_sync_error": "Failed to synchronise data with server.",
     "bot_avatar_name": "🤖 bot{num}",
     
+    // Auth Errors
+    "Invalid login credentials": "Invalid login credentials",
+
     "map_coords": "Coords",
+    "open_in_gmaps": "Open in Google Maps",
     "map_never": "Never",
     "system_user": "System",
     "unknown_group": "Unknown Group",
@@ -247,7 +251,11 @@ const translations = {
     "toast_sync_error": "Error al sincronizar los datos con el servidor.",
     "bot_avatar_name": "🤖 bot{num}",
     
+    // Auth Errors
+    "Invalid login credentials": "Credenciales de inicio de sesión no válidas",
+
     "map_coords": "Coordenadas",
+    "open_in_gmaps": "Abrir en Google Maps",
     "map_never": "Nunca",
     "system_user": "Sistema",
     "unknown_group": "Grupo desconocido",

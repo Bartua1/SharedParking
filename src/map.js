@@ -7,6 +7,8 @@ import { t } from './i18n';
 let mapInstance = null;
 let mapInitPromise = null;
 let markersGroup = null;
+let watchId = null;
+let userLocationMarker = null;
 
 // Initial default center (e.g. New York)
 const DEFAULT_LAT = 40.7128;
@@ -96,6 +98,12 @@ export async function initMap(elementId = 'map') {
       // Group to manage object markers
       markersGroup = L.layerGroup().addTo(mapInstance);
 
+      // Initial user marker location
+      updateUserLocationMarker(lat, lng);
+
+      // Start watching user's location to keep the blue dot updated in real-time
+      startWatchingLocation();
+
       // Add click vibration behavior to zoom buttons, etc.
       mapInstance.on('zoomend', () => {
         haptics.impact('light');
@@ -122,9 +130,74 @@ export async function initMap(elementId = 'map') {
 }
 
 /**
+ * Updates or creates the user's current location marker (blue dot).
+ */
+export function updateUserLocationMarker(lat, lng) {
+  if (!mapInstance) return;
+
+  const customIcon = L.divIcon({
+    className: 'user-location-marker',
+    html: `
+      <div class="user-location-container">
+        <div class="user-location-pulse"></div>
+        <div class="user-location-dot"></div>
+      </div>
+    `,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12]
+  });
+
+  if (userLocationMarker) {
+    userLocationMarker.setLatLng([lat, lng]);
+  } else {
+    userLocationMarker = L.marker([lat, lng], { icon: customIcon }).addTo(mapInstance);
+  }
+}
+
+/**
+ * Starts watching user's location to update the blue dot in real-time.
+ */
+async function startWatchingLocation() {
+  if (watchId !== null) return;
+  try {
+    watchId = await Geolocation.watchPosition({
+      enableHighAccuracy: true,
+      timeout: 10000
+    }, (position, err) => {
+      if (err) {
+        console.error('[Map] Error watching location:', err);
+        return;
+      }
+      if (position && position.coords) {
+        const { latitude, longitude } = position.coords;
+        updateUserLocationMarker(latitude, longitude);
+      }
+    });
+  } catch (err) {
+    console.error('[Map] Failed to start watching location:', err);
+  }
+}
+
+/**
  * Clean up the Leaflet map instance and related markers group on logout.
  */
 export function destroyMap() {
+  if (watchId !== null) {
+    try {
+      Geolocation.clearWatch({ id: watchId });
+    } catch (err) {
+      console.warn('[Map] Error clearing location watch:', err);
+    }
+    watchId = null;
+  }
+  if (userLocationMarker) {
+    try {
+      userLocationMarker.remove();
+    } catch (err) {
+      console.warn('[Map] Error removing user location marker:', err);
+    }
+    userLocationMarker = null;
+  }
   if (mapInstance) {
     try {
       mapInstance.remove();
@@ -157,7 +230,10 @@ export async function centerOnCurrentLocation() {
       enableHighAccuracy: true
     });
     if (coordinates && coordinates.coords) {
-      centerMap(coordinates.coords.latitude, coordinates.coords.longitude);
+      const lat = coordinates.coords.latitude;
+      const lng = coordinates.coords.longitude;
+      updateUserLocationMarker(lat, lng);
+      centerMap(lat, lng);
       haptics.notification('success');
     }
   } catch (err) {
@@ -223,6 +299,12 @@ export function updateMapMarkers(objects, usersMap = {}, groupsList = []) {
             <div style="font-size:0.7rem; color:var(--text-muted);">${timestamp}</div>
           </div>
         </div>
+        <a href="https://www.google.com/maps/search/?api=1&query=${lat},${lng}" target="_blank" rel="noopener noreferrer" class="popup-gmaps-btn">
+          <svg class="gmaps-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+          </svg>
+          <span>${t('open_in_gmaps')}</span>
+        </a>
       </div>
     `;
 

@@ -83,7 +83,7 @@ async function bootApp() {
       if (error) {
         console.error('[OAuth] setSession failed:', error);
         haptics.notification('error');
-        showToast(error.message, 'error');
+        showToast(t(error.message), 'error');
       } else {
         console.log('[OAuth] Session set successfully from deep link.');
         haptics.notification('success');
@@ -95,6 +95,23 @@ async function bootApp() {
       showToast('Login failed: no tokens received from server', 'error');
     }
   });
+
+  // 1. Get user location and Display map
+  console.log('[Main] Getting user location and initializing map...');
+  try {
+    await initMap('map');
+  } catch (err) {
+    console.error('[Main] Map initialization failed:', err);
+  }
+
+  // 2. Check user auth status
+  console.log('[Auth] Recovering session...');
+  try {
+    await supabase.auth.getSession();
+  } catch (err) {
+    console.warn('[Auth] Error during initial session recovery:', err);
+  }
+  console.log('[Auth] Session recovery complete.');
 
   // Track Auth status from Supabase
   supabase.auth.onAuthStateChange((event, session) => {
@@ -133,11 +150,8 @@ async function bootApp() {
           updateProfileUI(currentUser);
           showAuthOverlay(false);
           
-          // Directly connect to map and sync data since premium ad is removed
-          console.log('[Auth] Requesting map initialization...');
-          showToast(t('toast_connecting'), 'info');
-          await initMap('map');
-          console.log('[Auth] Map initialization finished. Starting syncData...');
+          // Populate the map with shared vehicle locations
+          console.log('[Auth] Starting syncData...');
           await syncData();
           console.log('[Auth] syncData finished.');
           
@@ -151,7 +165,9 @@ async function bootApp() {
           myObjects = [];
           usersMap = {};
           
-          destroyMap();
+          // Clear vehicle markers on map instead of destroying it completely,
+          // allowing the map to remain visible (but blurred) behind the auth screen.
+          updateMapMarkers([], {}, []);
           updateProfileUI(null);
           showAuthOverlay(true);
         }
@@ -263,7 +279,7 @@ async function onLogin(email, password) {
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) {
     haptics.notification('error');
-    showToast(error.message, 'error');
+    showToast(t(error.message), 'error');
   } else {
     haptics.notification('success');
     showToast(t('toast_signin_success'), 'success');
@@ -300,7 +316,7 @@ async function onSocialLogin(provider) {
 
       if (error) {
         haptics.notification('error');
-        showToast(error.message, 'error');
+        showToast(t(error.message), 'error');
       } else {
         haptics.notification('success');
         showToast(t('toast_signin_success'), 'success');
@@ -331,7 +347,7 @@ async function onSocialLogin(provider) {
 
     if (error) {
       haptics.notification('error');
-      showToast(error.message, 'error');
+      showToast(t(error.message), 'error');
       return;
     }
 
@@ -347,7 +363,7 @@ async function onSocialLogin(provider) {
 
     if (error) {
       haptics.notification('error');
-      showToast(error.message, 'error');
+      showToast(t(error.message), 'error');
     }
   }
 }
@@ -364,7 +380,7 @@ async function onRegister(email, password, username, avatarSeed) {
 
   if (error) {
     haptics.notification('error');
-    showToast(error.message, 'error');
+    showToast(t(error.message), 'error');
   } else {
     haptics.notification('success');
     showToast(t('toast_register_success'), 'success');

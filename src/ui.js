@@ -365,12 +365,15 @@ export function initUI(callbacks) {
  */
 export function showAuthOverlay(show) {
   const overlay = document.getElementById('auth-overlay');
+  const headerContainer = document.getElementById('app-header-container');
   if (show) {
     overlay.classList.add('active');
     overlay.setAttribute('aria-hidden', 'false');
+    if (headerContainer) headerContainer.style.display = 'none';
   } else {
     overlay.classList.remove('active');
     overlay.setAttribute('aria-hidden', 'true');
+    if (headerContainer) headerContainer.style.display = 'flex';
     // Clear inputs
     document.getElementById('auth-form').reset();
   }

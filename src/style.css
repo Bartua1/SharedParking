@@ -154,6 +154,37 @@ h1, h2, h3, h4 {
   border-radius: 50%;
   background: var(--pastel-rose);
 }
+.popup-gmaps-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--text-white) !important;
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  text-decoration: none !important;
+  cursor: pointer;
+  transition: var(--transition-bounce);
+  margin-top: 4px;
+  box-shadow: 0 4px 10px -2px rgba(120, 70, 220, 0.25);
+}
+.popup-gmaps-btn:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+.popup-gmaps-btn:active {
+  transform: scale(0.97);
+}
+.gmaps-icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
 
 /* Glassmorphism Styles */
 .glass-panel {
@@ -548,7 +579,9 @@ h1, h2, h3, h4 {
 
 /* Auth Theme Overlay */
 .auth-theme {
-  background: linear-gradient(135deg, hsl(220, 70%, 94%), hsl(262, 50%, 93%), hsl(340, 60%, 93%));
+  background: linear-gradient(135deg, rgba(220, 230, 255, 0.45), rgba(240, 230, 255, 0.45), rgba(255, 230, 240, 0.45));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -1095,6 +1128,50 @@ h1, h2, h3, h4 {
   }
   100% {
     transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+/* User Location Blue Dot Marker */
+.user-location-marker {
+  background: transparent !important;
+  border: none !important;
+}
+.user-location-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  width: 24px;
+  height: 24px;
+}
+.user-location-dot {
+  width: 14px;
+  height: 14px;
+  background: #2563eb; /* Vivid blue */
+  border: 2.5px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(37, 99, 235, 0.6);
+  z-index: 2;
+}
+.user-location-pulse {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  background: #3b82f6;
+  opacity: 0.4;
+  border-radius: 50%;
+  z-index: 1;
+  animation: user-pulse 2s infinite ease-out;
+  pointer-events: none;
+}
+@keyframes user-pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
     opacity: 0;
   }
 }
