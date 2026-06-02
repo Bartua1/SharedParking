@@ -7,6 +7,7 @@ import { BleClient } from '@capacitor-community/bluetooth-le';
 import { t, getCurrentLanguage, setLanguage, translateDOM } from './i18n';
 import { Browser } from '@capacitor/browser';
 import { App } from '@capacitor/app';
+import { AdMob } from '@capacitor-community/admob';
 
 // --- State Engine ---
 let currentUser = null;
@@ -14,6 +15,7 @@ let myGroups = [];
 let myObjects = [];
 let usersMap = {}; // Maps profile UUIDs to profile structures
 let myDevicesMap = {}; // Maps object_id to ble_device_id for current user
+let loginIncrementedThisSession = false;
 
 /**
  * Boots the application, registers auth hooks, and binds UI actions.
@@ -130,13 +132,31 @@ async function bootApp() {
           };
           console.log('[Auth] currentUser parsed:', currentUser);
 
-          // Upsert profile in DB to keep sync (only for real Supabase deployment)
-          if (!useMockMode) {
-            console.log('[Auth] Syncing profile with DB via upsert...');
+          // Sync profile and increment total logins once per app launch session
+          if (!loginIncrementedThisSession) {
+            loginIncrementedThisSession = true;
+            let totalLogins = 0;
+            try {
+              const { data: profileData } = await supabase
+                .from('profiles')
+                .select('total_logins')
+                .eq('id', currentUser.id)
+                .single();
+              if (profileData) {
+                totalLogins = profileData.total_logins || 0;
+              }
+            } catch (err) {
+              console.warn('[Auth] Failed to fetch total_logins:', err);
+            }
+
+            const currentTotal = totalLogins + 1;
+            console.log(`[Auth] Syncing profile with DB via upsert... Current logins: ${currentTotal}`);
+
             const { error: upsertErr } = await supabase.from('profiles').upsert({
               id: currentUser.id,
               username: currentUser.username,
               avatar_url: currentUser.avatar_url,
+              total_logins: currentTotal,
               updated_at: new Date().toISOString()
             });
             console.log('[Auth] Profile sync finished. Error status:', upsertErr);
@@ -144,6 +164,11 @@ async function bootApp() {
             if (upsertErr) {
               console.error('[Auth] Profile sync failed:', upsertErr);
               showToast(`Profile sync failed: ${upsertErr.message}`, 'error');
+            }
+
+            // Trigger the App Open Ad starting from the 50th login/app open
+            if (currentTotal >= 50) {
+              await triggerAppOpenAd();
             }
           }
 
@@ -389,6 +414,7 @@ async function onRegister(email, password, username, avatarSeed) {
 
 async function onLogout() {
   console.log('[Main] Log out request received.');
+  loginIncrementedThisSession = false;
   try {
     const { error } = await supabase.auth.signOut();
     if (error) {
@@ -730,6 +756,33 @@ async function initNativeBluetoothListener() {
     }
   } catch (err) {
     console.warn('[BLE Client] BleClient initialization failed:', err);
+  }
+}
+
+/**
+ * Trigger Google AdMob App Open Ad.
+ */
+async function triggerAppOpenAd() {
+  const isNative = window.Capacitor?.isNativePlatform?.() ?? false;
+  const platform = window.Capacitor?.getPlatform() || 'web';
+  const adId = platform === 'ios'
+    ? import.meta.env.VITE_ADMOB_IOS_AD_ID
+    : import.meta.env.VITE_ADMOB_ANDROID_AD_ID;
+
+  console.log(`[AdMob] Triggering App Open Ad (platform: ${platform}, adId: ${adId})`);
+
+  if (isNative && adId) {
+    try {
+      await AdMob.initialize();
+      await AdMob.loadAppOpen({ adId });
+      await AdMob.showAppOpen();
+      console.log('[AdMob] App Open Ad shown successfully.');
+    } catch (err) {
+      console.error('[AdMob] Error showing App Open ad:', err);
+    }
+  } else {
+    console.log('[AdMob Simulation] Simulating App Open ad on non-native platform or missing adId.');
+    showToast('[Ad] App Open Ad Simulated', 'info');
   }
 }
 

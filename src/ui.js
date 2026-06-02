@@ -5,6 +5,42 @@ import { initBleSelector, getBleValue } from './ble';
 
 let uiCallbacks = {};
 let openAccordions = new Set(); // Store open group accordion IDs to preserve state on redraw
+let isSignUpMode = false;
+
+/**
+ * Helper to update auth UI based on registration or login mode.
+ */
+function setSignUpMode(enabled) {
+  isSignUpMode = enabled;
+  const signupFields = document.getElementById('signup-fields');
+  const authToggleTxt = document.getElementById('auth-toggle-txt');
+  const authToggleBtn = document.getElementById('auth-toggle-btn');
+  const authSubmitBtn = document.getElementById('auth-submit-btn');
+  const authFormTitle = document.getElementById('auth-form-title');
+  const usernameInput = document.getElementById('auth-username');
+
+  if (isSignUpMode) {
+    if (signupFields) signupFields.classList.remove('hidden');
+    if (authToggleTxt) authToggleTxt.textContent = t('have_account');
+    if (authToggleBtn) authToggleBtn.textContent = t('signin_btn');
+    if (authSubmitBtn) authSubmitBtn.textContent = t('signup_btn');
+    if (authFormTitle) {
+      authFormTitle.textContent = t('signup_btn');
+      authFormTitle.setAttribute('data-i18n', 'signup_btn');
+    }
+    if (usernameInput) usernameInput.required = true;
+  } else {
+    if (signupFields) signupFields.classList.add('hidden');
+    if (authToggleTxt) authToggleTxt.textContent = t('no_account');
+    if (authToggleBtn) authToggleBtn.textContent = t('signup_btn');
+    if (authSubmitBtn) authSubmitBtn.textContent = t('signin_btn');
+    if (authFormTitle) {
+      authFormTitle.textContent = t('signin_btn');
+      authFormTitle.setAttribute('data-i18n', 'signin_btn');
+    }
+    if (usernameInput) usernameInput.required = false;
+  }
+}
 
 /**
  * Initializes all UI event listeners and DOM element hooks.
@@ -86,25 +122,28 @@ export function initUI(callbacks) {
   backdrop.addEventListener('click', closeSidenav);
 
   // --- Auth Dialog Actions ---
-  let isSignUpMode = false;
+  const authCard = document.querySelector('.auth-card');
+  const goToEmailBtn = document.getElementById('go-to-email-btn');
+  const authBackBtn = document.getElementById('auth-back-btn');
+
+  goToEmailBtn.addEventListener('click', () => {
+    haptics.impact('light');
+    authCard.classList.remove('show-screen-1');
+    authCard.classList.add('show-screen-2');
+  });
+
+  authBackBtn.addEventListener('click', () => {
+    haptics.impact('light');
+    authCard.classList.remove('show-screen-2');
+    authCard.classList.add('show-screen-1');
+  });
 
   authToggleBtn.addEventListener('click', () => {
     haptics.impact('light');
-    isSignUpMode = !isSignUpMode;
-    if (isSignUpMode) {
-      signupFields.classList.remove('hidden');
-      authToggleTxt.textContent = t('have_account');
-      authToggleBtn.textContent = t('signin_btn');
-      authSubmitBtn.textContent = t('signup_btn');
-      // Make fields required
-      document.getElementById('auth-username').required = true;
-    } else {
-      signupFields.classList.add('hidden');
-      authToggleTxt.textContent = t('no_account');
-      authToggleBtn.textContent = t('signup_btn');
-      authSubmitBtn.textContent = t('signin_btn');
-      document.getElementById('auth-username').required = false;
-    }
+    setSignUpMode(!isSignUpMode);
+    // Transition to credentials input panel when toggle is clicked from methods selection screen
+    authCard.classList.remove('show-screen-1');
+    authCard.classList.add('show-screen-2');
   });
 
   // Avatar pickers inside signup form
@@ -366,7 +405,15 @@ export function initUI(callbacks) {
 export function showAuthOverlay(show) {
   const overlay = document.getElementById('auth-overlay');
   const headerContainer = document.getElementById('app-header-container');
+  const authCard = document.querySelector('.auth-card');
+
   if (show) {
+    if (authCard) {
+      authCard.classList.add('show-screen-1');
+      authCard.classList.remove('show-screen-2');
+    }
+    setSignUpMode(false); // Reset to Sign In (login) mode by default
+
     overlay.classList.add('active');
     overlay.setAttribute('aria-hidden', 'false');
     if (headerContainer) headerContainer.style.display = 'none';

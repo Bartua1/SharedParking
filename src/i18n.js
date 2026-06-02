@@ -37,6 +37,8 @@ const translations = {
     "social_divider_text": "Or continue with",
     "google_signin": "Sign in with Google",
     "apple_signin": "Sign in with Apple",
+    "continue_email": "Continue with Email",
+    "back": "Back",
     
 
     // Modals
@@ -173,6 +175,8 @@ const translations = {
     "social_divider_text": "O continuar con",
     "google_signin": "Iniciar sesión con Google",
     "apple_signin": "Iniciar sesión con Apple",
+    "continue_email": "Continuar con Correo",
+    "back": "Atrás",
     
 
     // Modals

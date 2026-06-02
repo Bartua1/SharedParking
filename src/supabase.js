@@ -44,6 +44,16 @@ if (useMockMode) {
       return this;
     }
 
+    upsert(records) {
+      this.upsertRecords = records;
+      return this;
+    }
+
+    single() {
+      this.isSingle = true;
+      return this;
+    }
+
     eq(column, value) {
       this.filters.push({ column, value, type: 'eq' });
       return this;
@@ -66,6 +76,24 @@ if (useMockMode) {
           } else if (filter.type === 'in') {
             result = result.filter(item => filter.values.includes(item[filter.column]));
           }
+        }
+
+        // Apply Upsert actions
+        if (this.upsertRecords) {
+          const records = Array.isArray(this.upsertRecords) ? this.upsertRecords : [this.upsertRecords];
+          for (const r of records) {
+            const index = this.data.findIndex(item => item.id === r.id);
+            if (index !== -1) {
+              this.data[index] = { ...this.data[index], ...r, updated_at: new Date().toISOString() };
+            } else {
+              this.data.push({
+                created_at: new Date().toISOString(),
+                ...r
+              });
+            }
+          }
+          localStorage.setItem(`sp_mock_${this.table}`, JSON.stringify(this.data));
+          return resolve({ data: records, error: null });
         }
 
         // Apply Insert actions
@@ -127,7 +155,11 @@ if (useMockMode) {
         }
 
         // Return standard selections
-        resolve({ data: result, error: null });
+        if (this.isSingle) {
+          resolve({ data: result[0] || null, error: result[0] ? null : { message: 'Row not found' } });
+        } else {
+          resolve({ data: result, error: null });
+        }
       } catch (err) {
         resolve({ data: null, error: err });
       }
